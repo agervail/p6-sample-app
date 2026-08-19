@@ -5,7 +5,7 @@
 - [x] 2026-08-19 — Squelette de l'application : modèle banques × pads, décodage WAV,
       rééchantillonnage, pitch, mono, découpe en tranches, export WAV 16 bits, écriture
       séquentielle dans `IMPORT`, relecture, undo/redo, persistance du dossier cible.
-      Non commité.
+      Commit `11d8119`, poussé sur `origin/main`.
 
 ## Décisions
 

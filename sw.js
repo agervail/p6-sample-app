@@ -57,7 +57,7 @@ async function cacheMissing(urls) {
       const response = await fetch(url);
       if (response.ok) await cache.put(url, response);
     } catch (networkError) {
-      console.warn('Ressource absente du cache hors-ligne', url, networkError);
+      console.warn('Resource missing from the offline cache', url, networkError);
     }
   }));
 }

@@ -1,9 +1,15 @@
 const HATCH_SIZE = 7;
-const CENTER_LINE_ALPHA = 0.35;
-const OVERFLOW_FILL = 'rgba(201, 88, 75, 0.16)';
-const OVERFLOW_STROKE = 'rgba(201, 88, 75, 0.55)';
-const SLICE_STROKE = 'rgba(214, 163, 36, 0.55)';
-const PLAYHEAD_STROKE = '#E7ECF3';
+const CENTER_LINE_ALPHA = 0.3;
+const SIGNAL_COLOR = '#4D8DFD';
+const DIMMED_COLOR = '#39414F';
+const OVERFLOW_FILL = 'rgba(229, 84, 75, 0.16)';
+const OVERFLOW_STROKE = 'rgba(229, 84, 75, 0.55)';
+const SLICE_STROKE = 'rgba(224, 165, 58, 0.55)';
+const PLAYHEAD_STROKE = '#E8EAED';
+
+export function waveColor(isLoaded) {
+  return isLoaded ? SIGNAL_COLOR : DIMMED_COLOR;
+}
 
 let hatchPattern = null;
 

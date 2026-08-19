@@ -1,11 +1,9 @@
 import { PITCH_LIMIT_CENTS, PITCH_STEP_CENTS, SAMPLE_RATES } from '../constants.js';
 import { formatSeconds } from '../format.js';
 import { padMetrics } from '../audio/process.js';
-import { drawWaveform, positionFromPointer } from './waveform.js';
+import { drawWaveform, positionFromPointer, waveColor } from './waveform.js';
 
-const EMPTY_LABEL = 'Aucun échantillon';
-const SIGNAL_COLOR = '#5AA9E6';
-const DIMMED_COLOR = '#3A4756';
+const EMPTY_LABEL = 'No sample';
 
 function fillRateOptions(select) {
   for (const rate of SAMPLE_RATES) {
@@ -89,7 +87,7 @@ export function createPadView(padIndex, handlers) {
 
     drawWaveform(canvas, {
       peaks: pad.peaks,
-      color: isLoaded ? SIGNAL_COLOR : DIMMED_COLOR,
+      color: waveColor(isLoaded),
       overflowStart: metrics?.isTruncated ? metrics.maxSeconds / metrics.seconds : null,
       playhead: isPlaying ? playhead : null,
       sliceCount: pad.sliceCount,

@@ -9,15 +9,13 @@ import * as store from './state.js';
 import * as usb from './fs/usb.js';
 import { loadDestinationHandle, saveDestinationHandle } from './fs/handleStore.js';
 import { createPadView } from './ui/pad.js';
-import { drawWaveform, positionFromPointer } from './ui/waveform.js';
+import { drawWaveform, positionFromPointer, waveColor } from './ui/waveform.js';
 
 const TOAST_DURATION_MS = 4000;
-const SIGNAL_COLOR = '#5AA9E6';
-const DIMMED_COLOR = '#3A4756';
 const OFFLINE_EXTRA_ASSETS = ['manifest.json', 'icons/icon-192.png', 'icons/icon-512.png'];
 const WAV_PICKER_OPTIONS = {
   multiple: false,
-  types: [{ description: 'Échantillon WAV', accept: { 'audio/wav': ['.wav'] } }],
+  types: [{ description: 'WAV sample', accept: { 'audio/wav': ['.wav'] } }],
 };
 
 const grid = document.getElementById('pad-grid');
@@ -59,14 +57,14 @@ function reportFailure(error) {
 }
 
 function destinationText() {
-  if (!destination) return 'aucune clé sélectionnée';
+  if (!destination) return 'no USB key selected';
   return `${destination.name}/${IMPORT_FOLDER_NAME}`;
 }
 
 function renderDestination() {
   destinationLabel.textContent = destinationText();
   destinationLabel.classList.toggle('path--set', destination !== null && !destinationNeedsPermission);
-  destinationButton.textContent = destinationNeedsPermission ? 'Réautoriser' : 'Choisir…';
+  destinationButton.textContent = destinationNeedsPermission ? 'Re-authorize' : 'Choose…';
 }
 
 function bankBytes(bank) {
@@ -80,8 +78,8 @@ function truncationWarnings(bank) {
     if (!store.isPadLoaded(pad)) return [];
     const metrics = padMetrics(pad, bank.forceMono);
     if (!metrics.isTruncated) return [];
-    const layout = metrics.channelCount === 1 ? 'mono' : 'stéréo';
-    return [`PAD ${padIndex + 1} — ${formatSeconds(metrics.seconds)} alors que ${formatSeconds(metrics.maxSeconds)} tiennent en ${pad.sampleRate} Hz ${layout}`];
+    const layout = metrics.channelCount === 1 ? 'mono' : 'stereo';
+    return [`PAD ${padIndex + 1} — ${formatSeconds(metrics.seconds)} but only ${formatSeconds(metrics.maxSeconds)} fit at ${pad.sampleRate} Hz ${layout}`];
   });
 }
 
@@ -102,14 +100,14 @@ function renderDetail(playhead) {
   const isLoaded = store.isPadLoaded(pad);
   const metrics = isLoaded ? padMetrics(pad, bank.forceMono) : null;
 
-  detailName.textContent = isLoaded ? pad.name : 'Aucun échantillon sur ce pad';
+  detailName.textContent = isLoaded ? pad.name : 'No sample on this pad';
   detailLength.textContent = isLoaded
-    ? `${formatSeconds(metrics.seconds)} — mémoire ${formatSeconds(metrics.maxSeconds)} — ${formatBytes(metrics.bytes)}`
+    ? `${formatSeconds(metrics.seconds)} — memory ${formatSeconds(metrics.maxSeconds)} — ${formatBytes(metrics.bytes)}`
     : '';
 
   drawWaveform(detailCanvas, {
     peaks: pad.peaks,
-    color: isLoaded ? SIGNAL_COLOR : DIMMED_COLOR,
+    color: waveColor(isLoaded),
     overflowStart: metrics?.isTruncated ? metrics.maxSeconds / metrics.seconds : null,
     playhead: playingPadIndex() === store.getState().selectedPadIndex ? playhead : null,
     sliceCount: pad.sliceCount,
@@ -226,7 +224,7 @@ async function applyChop() {
       sliceCount: chopped.sliceCount,
       pitchCents: 0,
     });
-    showToast(`${chopped.sliceCount} tranches sur le PAD ${padIndex + 1}`, 'done');
+    showToast(`${chopped.sliceCount} slices on PAD ${padIndex + 1}`, 'done');
   } catch (error) {
     reportFailure(error);
   }
@@ -234,13 +232,13 @@ async function applyChop() {
 
 async function ensureDestination() {
   if (!destination) {
-    showToast('Sélectionne d’abord la clé de destination', 'error');
+    showToast('Select the destination USB key first', 'error');
     return null;
   }
   if (!(await usb.hasPermission(destination)) && !(await usb.requestPermission(destination))) {
     destinationNeedsPermission = true;
     renderDestination();
-    showToast('Accès à la clé refusé', 'error');
+    showToast('Access to the USB key was denied', 'error');
     return null;
   }
   destinationNeedsPermission = false;
@@ -280,16 +278,16 @@ async function writeToDestination() {
   const folder = await ensureDestination();
   if (!folder) return;
   try {
-    showToast('Préparation des échantillons…');
+    showToast('Preparing the samples…');
     const files = await collectBankFiles();
     if (files.length === 0) {
-      showToast('Aucun échantillon chargé', 'error');
+      showToast('No sample loaded', 'error');
       return;
     }
     await usb.writeSequentially(folder, files, (written, total, name) => {
       showToast(`${written}/${total} — ${name}`);
     });
-    showToast(`${files.length} fichiers écrits dans ${destinationText()}`, 'done');
+    showToast(`${files.length} files written to ${destinationText()}`, 'done');
   } catch (error) {
     reportFailure(error);
   }
@@ -307,7 +305,7 @@ async function readFromDestination() {
   try {
     const files = await usb.listWavFiles(folder);
     if (files.length === 0) {
-      showToast(`Aucun WAV dans ${destinationText()}`, 'error');
+      showToast(`No WAV file in ${destinationText()}`, 'error');
       return;
     }
     const loadedPadsByBank = Object.fromEntries(BANK_IDS.map((bankId) => [bankId, []]));
@@ -317,7 +315,7 @@ async function readFromDestination() {
       loadedPadsByBank[slot.bankId].push([slot.padIndex, await decodeWavFile(await file.handle.getFile())]);
     }
     store.replaceAllBanks(loadedPadsByBank);
-    showToast(`${files.length} fichiers relus depuis ${destinationText()}`, 'done');
+    showToast(`${files.length} files read back from ${destinationText()}`, 'done');
   } catch (error) {
     reportFailure(error);
   }
@@ -329,12 +327,12 @@ async function wipeImportFolder() {
   try {
     const files = await usb.listWavFiles(folder);
     if (files.length === 0) {
-      showToast(`${destinationText()} est déjà vide`);
+      showToast(`${destinationText()} is already empty`);
       return;
     }
-    if (!window.confirm(`Supprimer définitivement ${files.length} fichiers de ${destinationText()} ?`)) return;
+    if (!window.confirm(`Permanently delete ${files.length} files from ${destinationText()}?`)) return;
     await usb.removeFiles(folder, files.map((file) => file.name));
-    showToast(`${files.length} fichiers supprimés`, 'done');
+    showToast(`${files.length} files deleted`, 'done');
   } catch (error) {
     reportFailure(error);
   }
@@ -422,14 +420,14 @@ function registerServiceWorker() {
   if (!('serviceWorker' in navigator) || window.location.protocol === 'file:') return;
   navigator.serviceWorker.register('sw.js').then(
     () => whenFullyLoaded(() => primeOfflineCache().catch(reportFailure)),
-    () => showToast('Mode hors-ligne indisponible : le service worker n’a pas pu être enregistré', 'error'),
+    () => showToast('Offline mode unavailable: the service worker could not be registered', 'error'),
   );
 }
 
 function start() {
   document.documentElement.dataset.booted = 'true';
   if (!usb.isSupported()) {
-    showToast('Navigateur non compatible : ouvre cette page dans Chrome, Edge ou Brave', 'error');
+    showToast('Unsupported browser: open this page in Chrome, Edge or Brave', 'error');
   }
   buildSelectors();
   buildPads();

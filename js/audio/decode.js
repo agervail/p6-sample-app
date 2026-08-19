@@ -30,12 +30,12 @@ function findFormatChunkOffset(view) {
 
 export function readWavFormat(bytes) {
   const view = new DataView(bytes);
-  if (view.byteLength < FIRST_CHUNK_OFFSET) throw new Error('Fichier trop court pour être un WAV');
+  if (view.byteLength < FIRST_CHUNK_OFFSET) throw new Error('File too short to be a WAV');
   if (readTag(view, 0) !== RIFF_TAG || readTag(view, 8) !== WAVE_TAG) {
-    throw new Error('Ce fichier n’est pas un WAV');
+    throw new Error('This file is not a WAV');
   }
   const formatOffset = findFormatChunkOffset(view);
-  if (formatOffset < 0) throw new Error('En-tête WAV incomplet (chunk fmt absent)');
+  if (formatOffset < 0) throw new Error('Incomplete WAV header (fmt chunk missing)');
   return {
     channelCount: view.getUint16(formatOffset + CHANNEL_COUNT_OFFSET, true),
     sampleRate: view.getUint32(formatOffset + SAMPLE_RATE_OFFSET, true),

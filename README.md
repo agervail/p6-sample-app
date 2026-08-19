@@ -1,92 +1,90 @@
 # P-6 Sample Manager
 
-Gestionnaire d'échantillons pour clé USB, façon Roland AIRA P-6 : 4 banques de 6 pads,
-un WAV par pad, réglages par pad (fréquence, mono, pitch, découpe en tranches), puis
-écriture séquentielle dans le dossier `IMPORT` de la clé.
+USB key sample manager in the spirit of the Roland AIRA P-6: 4 banks of 6 pads, one WAV
+per pad, per-pad settings (sample rate, mono, pitch, slicing), then sequential writing
+into the `IMPORT` folder of the key.
 
-Page web sans build ni dépendance runtime hors Google Fonts. Tout se passe dans le
-navigateur, il n'y a pas de serveur applicatif.
+A web page with no build step and no runtime dependency other than Google Fonts.
+Everything happens in the browser; there is no application server.
 
-## Lancer
+## Run
 
 ```sh
 python3 -m http.server 8080
 ```
 
-Puis ouvrir <http://localhost:8080> dans **Chrome, Edge ou Brave**.
+Then open <http://localhost:8080> in **Chrome, Edge or Brave**.
 
-La File System Access API n'existe que sur Chromium et exige une origine sûre : en
-`file://` le sélecteur de dossier est bloqué et IndexedDB inutilisable. La page ne
-fonctionne pas non plus dans une iframe cross-origin. Ouverte en `file://`, elle
-affiche un encart qui rappelle la commande au lieu d'une page vide.
+The File System Access API only exists on Chromium and requires a secure origin: over
+`file://` the directory picker is blocked and IndexedDB unusable. The page does not work
+in a cross-origin iframe either. Opened over `file://`, it shows a notice with the
+command to run instead of a blank page.
 
-## Installer comme application
+## Install as an application
 
-La page est une PWA : servie depuis `localhost` ou `https://`, Chrome propose de
-l'installer (icône dans la barre d'adresse, ou `⋮ → Diffuser, enregistrer et partager
-→ Installer`). Elle atterrit alors dans `~/Applications/Chrome Apps` et s'ouvre dans sa
-propre fenêtre.
+The page is a PWA: served from `localhost` or `https://`, Chrome offers to install it
+(icon in the address bar, or `⋮ → Cast, save and share → Install`). It then lands in
+`~/Applications/Chrome Apps` and opens in its own window.
 
-Le service worker met en cache tout ce que la page charge — modules, styles, polices
-Google — et la sert ensuite depuis ce cache : une fois visitée, l'app démarre serveur
-éteint et réseau coupé.
+The service worker caches everything the page loads — modules, styles, Google Fonts —
+and serves it from that cache afterwards: once visited, the app starts with the server
+stopped and the network off.
 
-La stratégie est *stale-while-revalidate* : le cache répond immédiatement, la version
-fraîche est récupérée en arrière-plan et prise en compte au chargement suivant. **Une
-modification du code apparaît donc au deuxième rechargement**, pas au premier.
+The strategy is *stale-while-revalidate*: the cache answers immediately, the fresh
+version is fetched in the background and picked up on the next load. **A code change
+therefore shows up on the second reload**, not the first.
 
-## Utilisation
+## Usage
 
-- **Charger** ouvre le sélecteur de fichier ; un glisser-déposer sur un pad marche aussi.
-- Un clic sur une forme d'onde lance la lecture depuis ce point. Ce qui est joué est
-  exactement ce qui sera écrit : rééchantillonnage, mono et pitch sont appliqués avant
-  l'écoute, et la partie qui dépasse la mémoire du pad est coupée.
-- La zone hachurée en rouge sur la forme d'onde montre ce qui ne tiendra pas.
-- **Chop** découpe l'échantillon en tranches de longueur égale, régulièrement ou sur les
-  transitoires détectées, et le remplace par le résultat sur le même pad.
-- **Banques → clé** écrit toutes les banques, un fichier après l'autre, dans l'ordre des
-  pads. **Clé → banques** relit le dossier `IMPORT`.
-- ⌘Z / ⇧⌘Z annulent et rétablissent les modifications des pads.
+- **Load** opens the file picker; dropping a file onto a pad works too.
+- Clicking a waveform starts playback from that point. What you hear is exactly what
+  will be written: resampling, mono and pitch are applied before the preview, and
+  whatever exceeds the pad memory is cut off.
+- The red hatched area on the waveform shows what will not fit.
+- **Chop** cuts the sample into equal-length slices, either evenly or on detected
+  transients, and replaces the sample with the result on the same pad.
+- **Banks → key** writes every bank, one file after another, in pad order.
+  **Key → banks** reads the `IMPORT` folder back.
+- ⌘Z / ⇧⌘Z undo and redo pad changes.
 
-## Conventions d'écriture
+## Writing conventions
 
-- Les fichiers sont nommés `A1_nom.wav` : lettre de banque, numéro de pad, nom nettoyé
-  (`NFD`, diacritiques retirés, `[^A-Za-z0-9._-]` remplacé par `_`). Le préfixe rend
-  l'ordre explicite quel que soit le tri du lecteur.
-- L'écriture est strictement séquentielle, dans l'ordre des banques puis des pads.
-- Les noms en double sont dédupliqués avant écriture (`_2`, `_3`).
-- Export en WAV PCM 16 bits, en-tête écrit à la main.
+- Files are named `A1_name.wav`: bank letter, pad number, cleaned-up name (`NFD`,
+  diacritics stripped, `[^A-Za-z0-9._-]` replaced by `_`). The prefix makes the order
+  explicit whatever sort order the reader uses.
+- Writing is strictly sequential, by bank then by pad.
+- Duplicate names are deduplicated before writing (`_2`, `_3`).
+- Export as 16-bit PCM WAV, with a hand-written header.
 
-## Contraintes du P-6
+## P-6 constraints
 
-Un échantillon dispose de 512 Kio, soit en mono :
+A sample gets 512 KiB, which in mono means:
 
-| Fréquence | Durée maximale |
+| Sample rate | Maximum length |
 |---|---|
-| 44,1 kHz | 5,94 s |
-| 22,05 kHz | 11,89 s |
-| 14,7 kHz | 17,83 s |
-| 11,025 kHz | 23,78 s |
+| 44.1 kHz | 5.94 s |
+| 22.05 kHz | 11.89 s |
+| 14.7 kHz | 17.83 s |
+| 11.025 kHz | 23.78 s |
 
-En stéréo, la moitié. Les fréquences sont des divisions entières de 44,1 kHz (÷1, ÷2,
-÷3, ÷4). La documentation Roland tronque ces durées à une décimale (5,9 s, 11,8 s…) ;
-l'application affiche la capacité réelle.
+In stereo, half of that. The sample rates are integer divisions of 44.1 kHz (÷1, ÷2, ÷3,
+÷4). The Roland documentation truncates these lengths to one decimal (5.9 s, 11.8 s…);
+this app shows the real capacity.
 
-`MAX_PAD_BYTES`, `SAMPLE_RATES` et le nom du dossier cible `IMPORT_FOLDER_NAME` sont
-dans `js/constants.js`.
+`MAX_PAD_BYTES`, `SAMPLE_RATES` and the target folder name `IMPORT_FOLDER_NAME` live in
+`js/constants.js`.
 
-## Limites assumées
+## Accepted limitations
 
-- WAV uniquement : `decodeAudioData` suffit, pas de ffmpeg.wasm.
-- Le pitch est un changement de vitesse, pas un time-stretch : la durée varie avec la
-  hauteur.
-- L'espace libre de la clé est inconnu du navigateur ; seule la taille à écrire est
-  affichée.
-- Pas d'éjection du volume, ça reste au Finder. Pollution macOS à nettoyer après coup :
-  `dot_clean -m /Volumes/MaCle`.
-- Les chunks WAV non audio (LIST/INFO, cue points) sont perdus à l'export.
-- Seul le dossier de destination est mémorisé entre deux sessions (IndexedDB) ; les
-  échantillons chargés ne le sont pas.
-- Le handle de la clé est lié à l'origine : passer de `localhost` à un domaine `https://`
-  demande une nouvelle autorisation.
-- Les icônes sont générées par `tools/make-icons.py` (Python seul, sans dépendance).
+- WAV only: `decodeAudioData` is enough, no ffmpeg.wasm.
+- Pitch is a speed change, not a time-stretch: length varies with pitch.
+- The free space on the key is unknown to the browser; only the size to be written is
+  shown.
+- No volume ejection, that stays with the Finder. macOS clutter to clean up afterwards:
+  `dot_clean -m /Volumes/MyKey`.
+- Non-audio WAV chunks (LIST/INFO, cue points) are lost on export.
+- Only the destination folder is remembered between sessions (IndexedDB); loaded samples
+  are not.
+- The key handle is bound to the origin: moving from `localhost` to an `https://` domain
+  requires a new authorization.
+- Icons are generated by `tools/make-icons.py` (plain Python, no dependency).

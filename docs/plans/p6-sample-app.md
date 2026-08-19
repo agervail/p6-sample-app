@@ -18,6 +18,12 @@
       fréquences corrigées en 44100 / 22050 / 14700 / 11025 (32000 et 16000 n'existent
       pas sur l'appareil).
 
+- [x] 2026-08-19 — Passage de l'interface en anglais (page, messages, README, manifest)
+      et refonte visuelle : thème sombre classique, palette neutre à accent bleu unique,
+      Inter à la place d'Archivo Narrow, tailles et espacements augmentés. Vérifié dans
+      le navigateur : chargement d'un WAV par glisser-déposer, zone de débordement,
+      chop, dialogue, toasts, encart `file://`. Non commité.
+
 ## Décisions
 
 - Modèle retenu : 4 banques × 6 pads (le screenshot P-6), pas la liste à plat du brief.
@@ -26,6 +32,14 @@
   de la V1.
 - Direction visuelle sombre reprise du screenshot, mais retypographiée : une seule
   couleur de signal, l'ambre réservé à l'action d'écriture, le rouge au destructif.
+- Revamp 2026-08-19 : thème sombre « classique » plutôt que la maquette Roland. Gris
+  neutres, bleu #4D8DFD comme seule couleur de signal (bouton d'écriture compris, il
+  n'est plus ambre), ambre gardé pour chop et avertissements, rouge pour le destructif.
+  Une seule famille d'interface (Inter) plus JetBrains Mono pour les chiffres.
+- Les couleurs de forme d'onde vivent dans `js/ui/waveform.js` (`waveColor`), plus
+  dupliquées dans `main.js` et `ui/pad.js`.
+- Toute la langue de l'app et du README est l'anglais ; ce fichier de plan reste en
+  français.
 - Le brief prévoyait un fichier HTML unique ; le périmètre réel (banques, chop,
   rééchantillonnage, undo, accès disque) l'a fait éclater en modules ES servis tels
   quels. Toujours aucun build.

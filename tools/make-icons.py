@@ -1,10 +1,10 @@
-"""Génère les icônes PNG de la PWA : six pads sur fond sombre."""
+"""Generate the PWA PNG icons: six pads on a dark background."""
 import struct
 import zlib
 from pathlib import Path
 
-BACKGROUND = (15, 19, 26, 255)
-PAD_COLOR = (90, 169, 230, 255)
+BACKGROUND = (14, 16, 20, 255)
+PAD_COLOR = (77, 141, 253, 255)
 SUPERSAMPLE = 4
 MARGIN_RATIO = 0.16
 GAP_RATIO = 0.06

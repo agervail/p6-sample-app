@@ -1,47 +1,47 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>P-6 Sample Manager</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0F131A">
+<meta name="theme-color" content="#0E1014">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 <div class="boot-notice" id="boot-notice" hidden>
-  <h1 class="boot-notice__title">Ouvre cette page depuis localhost</h1>
-  <p>En <code>file://</code>, Chrome donne une origine opaque à la page : les modules
-    JavaScript et l’accès au disque sont bloqués. Depuis le dossier du projet :</p>
+  <h1 class="boot-notice__title">Open this page from localhost</h1>
+  <p>Over <code>file://</code>, Chrome gives the page an opaque origin: JavaScript modules
+    and disk access are both blocked. From the project folder, run:</p>
   <pre class="boot-notice__command">python3 -m http.server 8080</pre>
-  <p>puis <a href="http://localhost:8080">http://localhost:8080</a></p>
+  <p>then open <a href="http://localhost:8080">http://localhost:8080</a></p>
 </div>
 
 <div class="app">
 
   <header class="topbar">
     <div class="topbar__group">
-      <span class="label">Banque</span>
-      <select class="select select--bank" id="bank-select" aria-label="Banque courante"></select>
-      <label class="check"><input type="checkbox" id="bank-mono"><span>Forcer mono</span></label>
+      <span class="label">Bank</span>
+      <select class="select select--bank" id="bank-select" aria-label="Current bank"></select>
+      <label class="check"><input type="checkbox" id="bank-mono"><span>Force mono</span></label>
     </div>
 
     <div class="topbar__group topbar__group--path">
       <span class="label">Destination</span>
-      <span class="path" id="destination-path">aucune clé sélectionnée</span>
-      <button type="button" class="btn btn--quiet" id="choose-destination">Choisir…</button>
+      <span class="path" id="destination-path">no USB key selected</span>
+      <button type="button" class="btn btn--quiet" id="choose-destination">Choose…</button>
     </div>
 
     <div class="topbar__group topbar__group--end">
-      <button type="button" class="btn btn--icon" id="undo" aria-label="Annuler" title="Annuler">
+      <button type="button" class="btn btn--icon" id="undo" aria-label="Undo" title="Undo">
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 5 3 9l4 4M3.6 9H12a4.5 4.5 0 0 1 0 9h-2"/></svg>
       </button>
-      <button type="button" class="btn btn--icon" id="redo" aria-label="Rétablir" title="Rétablir">
+      <button type="button" class="btn btn--icon" id="redo" aria-label="Redo" title="Redo">
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m13 5 4 4-4 4M16.4 9H8a4.5 4.5 0 0 0 0 9h2"/></svg>
       </button>
     </div>
@@ -50,34 +50,34 @@
   <main class="grid" id="pad-grid"></main>
 
   <section class="storage">
-    <h2 class="panel-title">Mémoire</h2>
+    <h2 class="panel-title">Memory</h2>
 
     <div class="storage__figures">
       <div class="figure">
-        <span class="label">Banque courante</span>
-        <strong class="figure__value" id="bank-size">0 Ko</strong>
+        <span class="label">Current bank</span>
+        <strong class="figure__value" id="bank-size">0 KB</strong>
       </div>
       <div class="figure">
-        <span class="label">Toutes banques</span>
-        <strong class="figure__value" id="total-size">0 Ko</strong>
+        <span class="label">All banks</span>
+        <strong class="figure__value" id="total-size">0 KB</strong>
       </div>
       <ul class="warnings" id="warnings"></ul>
     </div>
 
     <div class="detail">
       <div class="detail__head">
-        <span class="detail__name" id="detail-name">Aucun échantillon sélectionné</span>
+        <span class="detail__name" id="detail-name">No sample selected</span>
         <span class="detail__length mono" id="detail-length"></span>
       </div>
-      <canvas class="detail__wave" id="detail-wave" height="150"></canvas>
+      <canvas class="detail__wave" id="detail-wave" height="168"></canvas>
     </div>
   </section>
 
   <footer class="actions">
-    <button type="button" class="btn btn--primary" id="write-usb">Banques → clé</button>
-    <button type="button" class="btn" id="read-usb">Clé → banques</button>
-    <button type="button" class="btn btn--danger" id="clear-bank">Vider la banque</button>
-    <button type="button" class="btn btn--danger" id="wipe-import">Effacer le dossier IMPORT</button>
+    <button type="button" class="btn btn--primary" id="write-usb">Banks → key</button>
+    <button type="button" class="btn" id="read-usb">Key → banks</button>
+    <button type="button" class="btn btn--danger" id="clear-bank">Clear bank</button>
+    <button type="button" class="btn btn--danger" id="wipe-import">Erase IMPORT folder</button>
     <span class="wordmark">P-6</span>
   </footer>
 
@@ -87,22 +87,22 @@
 
 <dialog class="dialog" id="chop-dialog">
   <form method="dialog" class="dialog__body">
-    <h2 class="panel-title">Découper en tranches</h2>
+    <h2 class="panel-title">Chop into slices</h2>
     <p class="dialog__target mono" id="chop-target"></p>
     <label class="dialog__row">
-      <span class="label">Tranches</span>
+      <span class="label">Slices</span>
       <select class="select" id="chop-count"></select>
     </label>
     <label class="dialog__row">
       <span class="label">Placement</span>
       <select class="select" id="chop-mode">
-        <option value="equal">Régulier</option>
-        <option value="transient">Sur les transitoires</option>
+        <option value="equal">Even</option>
+        <option value="transient">On transients</option>
       </select>
     </label>
     <div class="dialog__actions">
-      <button type="submit" value="cancel" class="btn btn--quiet">Annuler</button>
-      <button type="submit" value="chop" class="btn btn--accent">Découper</button>
+      <button type="submit" value="cancel" class="btn btn--quiet">Cancel</button>
+      <button type="submit" value="chop" class="btn btn--accent">Chop</button>
     </div>
   </form>
 </dialog>
@@ -114,32 +114,32 @@
       <p class="pad__name"></p>
     </header>
 
-    <canvas class="pad__wave" data-wave height="80"></canvas>
+    <canvas class="pad__wave" data-wave height="88"></canvas>
 
     <div class="row">
-      <span class="label">Fréquence</span>
-      <select class="select" data-rate aria-label="Fréquence d'échantillonnage"></select>
+      <span class="label">Rate</span>
+      <select class="select" data-rate aria-label="Sample rate"></select>
       <label class="check"><input type="checkbox" data-mono><span>Mono</span></label>
     </div>
 
     <div class="row">
       <span class="label">Pitch</span>
       <div class="stepper">
-        <button type="button" data-pitch-down aria-label="Baisser le pitch">−</button>
-        <input type="number" class="stepper__value mono" data-pitch aria-label="Pitch en cents">
-        <button type="button" data-pitch-up aria-label="Monter le pitch">+</button>
+        <button type="button" data-pitch-down aria-label="Lower the pitch">−</button>
+        <input type="number" class="stepper__value mono" data-pitch aria-label="Pitch in cents">
+        <button type="button" data-pitch-up aria-label="Raise the pitch">+</button>
       </div>
       <span class="unit">cents</span>
       <button type="button" class="btn btn--quiet" data-pitch-reset>Reset</button>
     </div>
 
     <div class="pad__actions">
-      <button type="button" class="btn" data-load>Charger</button>
-      <button type="button" class="btn btn--icon" data-play aria-label="Écouter">
+      <button type="button" class="btn" data-load>Load</button>
+      <button type="button" class="btn btn--icon" data-play aria-label="Preview">
         <svg class="icon-play" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 4.5v11l10-5.5z" fill="currentColor" stroke="none"/></svg>
         <svg class="icon-stop" viewBox="0 0 20 20" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" fill="currentColor" stroke="none"/></svg>
       </button>
-      <button type="button" class="btn btn--icon btn--danger" data-clear aria-label="Retirer l'échantillon">
+      <button type="button" class="btn btn--icon btn--danger" data-clear aria-label="Remove the sample">
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4 4 11h12zM4 15h12"/></svg>
       </button>
       <button type="button" class="btn btn--accent" data-chop>Chop</button>

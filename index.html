@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P-6 Sample Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="topbar__group">
+      <span class="label">Banque</span>
+      <select class="select select--bank" id="bank-select" aria-label="Banque courante"></select>
+      <label class="check"><input type="checkbox" id="bank-mono"><span>Forcer mono</span></label>
+    </div>
+
+    <div class="topbar__group topbar__group--path">
+      <span class="label">Destination</span>
+      <span class="path" id="destination-path">aucune clé sélectionnée</span>
+      <button type="button" class="btn btn--quiet" id="choose-destination">Choisir…</button>
+    </div>
+
+    <div class="topbar__group topbar__group--end">
+      <button type="button" class="btn btn--icon" id="undo" aria-label="Annuler" title="Annuler">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 5 3 9l4 4M3.6 9H12a4.5 4.5 0 0 1 0 9h-2"/></svg>
+      </button>
+      <button type="button" class="btn btn--icon" id="redo" aria-label="Rétablir" title="Rétablir">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m13 5 4 4-4 4M16.4 9H8a4.5 4.5 0 0 0 0 9h2"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="grid" id="pad-grid"></main>
+
+  <section class="storage">
+    <h2 class="panel-title">Mémoire</h2>
+
+    <div class="storage__figures">
+      <div class="figure">
+        <span class="label">Banque courante</span>
+        <strong class="figure__value" id="bank-size">0 Ko</strong>
+      </div>
+      <div class="figure">
+        <span class="label">Toutes banques</span>
+        <strong class="figure__value" id="total-size">0 Ko</strong>
+      </div>
+      <ul class="warnings" id="warnings"></ul>
+    </div>
+
+    <div class="detail">
+      <div class="detail__head">
+        <span class="detail__name" id="detail-name">Aucun échantillon sélectionné</span>
+        <span class="detail__length mono" id="detail-length"></span>
+      </div>
+      <canvas class="detail__wave" id="detail-wave" height="150"></canvas>
+    </div>
+  </section>
+
+  <footer class="actions">
+    <button type="button" class="btn btn--primary" id="write-usb">Banques → clé</button>
+    <button type="button" class="btn" id="read-usb">Clé → banques</button>
+    <button type="button" class="btn btn--danger" id="clear-bank">Vider la banque</button>
+    <button type="button" class="btn btn--danger" id="wipe-import">Effacer le dossier IMPORT</button>
+    <span class="wordmark">P-6</span>
+  </footer>
+
+</div>
+
+<p class="toast" id="toast" role="status" aria-live="polite" hidden></p>
+
+<dialog class="dialog" id="chop-dialog">
+  <form method="dialog" class="dialog__body">
+    <h2 class="panel-title">Découper en tranches</h2>
+    <p class="dialog__target mono" id="chop-target"></p>
+    <label class="dialog__row">
+      <span class="label">Tranches</span>
+      <select class="select" id="chop-count"></select>
+    </label>
+    <label class="dialog__row">
+      <span class="label">Placement</span>
+      <select class="select" id="chop-mode">
+        <option value="equal">Régulier</option>
+        <option value="transient">Sur les transitoires</option>
+      </select>
+    </label>
+    <div class="dialog__actions">
+      <button type="submit" value="cancel" class="btn btn--quiet">Annuler</button>
+      <button type="submit" value="chop" class="btn btn--accent">Découper</button>
+    </div>
+  </form>
+</dialog>
+
+<template id="pad-template">
+  <article class="pad">
+    <header class="pad__head">
+      <h2 class="pad__id"></h2>
+      <p class="pad__name"></p>
+    </header>
+
+    <canvas class="pad__wave" data-wave height="80"></canvas>
+
+    <div class="row">
+      <span class="label">Fréquence</span>
+      <select class="select" data-rate aria-label="Fréquence d'échantillonnage"></select>
+      <label class="check"><input type="checkbox" data-mono><span>Mono</span></label>
+    </div>
+
+    <div class="row">
+      <span class="label">Pitch</span>
+      <div class="stepper">
+        <button type="button" data-pitch-down aria-label="Baisser le pitch">−</button>
+        <input type="number" class="stepper__value mono" data-pitch aria-label="Pitch en cents">
+        <button type="button" data-pitch-up aria-label="Monter le pitch">+</button>
+      </div>
+      <span class="unit">cents</span>
+      <button type="button" class="btn btn--quiet" data-pitch-reset>Reset</button>
+    </div>
+
+    <div class="pad__actions">
+      <button type="button" class="btn" data-load>Charger</button>
+      <button type="button" class="btn btn--icon" data-play aria-label="Écouter">
+        <svg class="icon-play" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 4.5v11l10-5.5z" fill="currentColor" stroke="none"/></svg>
+        <svg class="icon-stop" viewBox="0 0 20 20" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" fill="currentColor" stroke="none"/></svg>
+      </button>
+      <button type="button" class="btn btn--icon btn--danger" data-clear aria-label="Retirer l'échantillon">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4 4 11h12zM4 15h12"/></svg>
+      </button>
+      <button type="button" class="btn btn--accent" data-chop>Chop</button>
+    </div>
+  </article>
+</template>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

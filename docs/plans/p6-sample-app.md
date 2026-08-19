@@ -1,64 +1,68 @@
 # P-6 Sample Manager
 
-## État
+## State
 
-- [x] 2026-08-19 — Squelette de l'application : modèle banques × pads, décodage WAV,
-      rééchantillonnage, pitch, mono, découpe en tranches, export WAV 16 bits, écriture
-      séquentielle dans `IMPORT`, relecture, undo/redo, persistance du dossier cible.
-      Commit `11d8119`, poussé sur `origin/main`.
+- [x] 2026-08-19 — Application skeleton: banks × pads model, WAV decoding, resampling,
+      pitch, mono, slicing, 16-bit WAV export, sequential writing into `IMPORT`, reading
+      back, undo/redo, persistence of the target folder. Commit `11d8119`, pushed to
+      `origin/main`.
 
-- [x] 2026-08-19 — Encart de démarrage quand la page est ouverte en `file://`, au lieu
-      d'une grille vide et silencieuse.
-- [x] 2026-08-19 — PWA : manifest, icônes générées, service worker hors-ligne. Vérifié
-      serveur éteint : l'app démarre depuis le cache, polices comprises.
-- [ ] Publier sur GitHub Pages pour se passer du serveur local — en attente de l'accord
-      d'Antoine, ça rend le dépôt et l'app publics.
+- [x] 2026-08-19 — Boot notice when the page is opened over `file://`, instead of an
+      empty, silent grid.
+- [x] 2026-08-19 — PWA: manifest, generated icons, offline service worker. Verified with
+      the server stopped: the app starts from the cache, fonts included.
+- [ ] Publish on GitHub Pages to do away with the local server — waiting for Antoine's
+      go-ahead, it makes the repo and the app public.
 
-- [x] 2026-08-19 — Specs Roland fournies par Antoine : 512 Kio par échantillon confirmé,
-      fréquences corrigées en 44100 / 22050 / 14700 / 11025 (32000 et 16000 n'existent
-      pas sur l'appareil).
+- [x] 2026-08-19 — Roland specs provided by Antoine: 512 KiB per sample confirmed, sample
+      rates corrected to 44100 / 22050 / 14700 / 11025 (32000 and 16000 do not exist on
+      the device).
 
-- [x] 2026-08-19 — Passage de l'interface en anglais (page, messages, README, manifest)
-      et refonte visuelle : thème sombre classique, palette neutre à accent bleu unique,
-      Inter à la place d'Archivo Narrow, tailles et espacements augmentés. Vérifié dans
-      le navigateur : chargement d'un WAV par glisser-déposer, zone de débordement,
-      chop, dialogue, toasts, encart `file://`. Non commité.
+- [x] 2026-08-19 — Interface switched to English (page, messages, README, manifest) and
+      visual overhaul: classic dark theme, neutral palette with a single blue accent,
+      Inter instead of Archivo Narrow, larger sizes and spacing. Verified in the browser:
+      loading a WAV by drag and drop, overflow area, chop, dialog, toasts, `file://`
+      notice. Commit `ad013e4`, pushed to `origin/main`.
 
-## Décisions
+- [x] 2026-08-19 — Repo `CLAUDE.md` added: plan-before-commit sequence, the
+      stale-while-revalidate reload trap, the language rule. Plan file and the last French
+      strings translated, so the whole repo is English.
 
-- Modèle retenu : 4 banques × 6 pads (le screenshot P-6), pas la liste à plat du brief.
-- Traitements retenus : ceux du P-6 (fréquence, mono, pitch en cents, chop). La
-  normalisation, le rognage des silences et les fondus du brief initial sont écartés
-  de la V1.
-- Direction visuelle sombre reprise du screenshot, mais retypographiée : une seule
-  couleur de signal, l'ambre réservé à l'action d'écriture, le rouge au destructif.
-- Revamp 2026-08-19 : thème sombre « classique » plutôt que la maquette Roland. Gris
-  neutres, bleu #4D8DFD comme seule couleur de signal (bouton d'écriture compris, il
-  n'est plus ambre), ambre gardé pour chop et avertissements, rouge pour le destructif.
-  Une seule famille d'interface (Inter) plus JetBrains Mono pour les chiffres.
-- Les couleurs de forme d'onde vivent dans `js/ui/waveform.js` (`waveColor`), plus
-  dupliquées dans `main.js` et `ui/pad.js`.
-- Toute la langue de l'app et du README est l'anglais ; ce fichier de plan reste en
-  français.
-- Le brief prévoyait un fichier HTML unique ; le périmètre réel (banques, chop,
-  rééchantillonnage, undo, accès disque) l'a fait éclater en modules ES servis tels
-  quels. Toujours aucun build.
-- Le service worker ne maintient pas de liste de fichiers à précacher : la page lui
-  envoie ce qu'elle vient réellement de charger (`performance.getEntriesByType`), plus
-  le manifest et les icônes que cette API ne voit pas. Rien à mettre à jour en ajoutant
-  un module.
-- Stratégie *stale-while-revalidate* plutôt qu'un cache versionné : pas de numéro de
-  version à incrémenter, au prix d'un rechargement de décalage après un changement.
-- Le pitch est baké dans le fichier écrit par changement de vitesse, pas exposé comme
-  paramètre au P-6 : on rééchantillonne vers `sampleRate / 2^(cents/1200)` et on déclare
-  l'en-tête à `sampleRate`.
-- La lecture rend exactement le fichier qui sera écrit, troncature comprise.
+## Decisions
 
-## À vérifier
+- Model chosen: 4 banks × 6 pads (the P-6 screenshot), not the flat list from the brief.
+- Processing chosen: what the P-6 itself offers (sample rate, mono, pitch in cents, chop).
+  Normalization, silence trimming and fades from the initial brief are out of V1.
+- Dark visual direction taken from the screenshot, but re-typeset: a single signal color,
+  amber reserved for the write action, red for destructive actions.
+- Revamp 2026-08-19: a "classic" dark theme rather than the Roland mockup. Neutral grays,
+  blue #4D8DFD as the only signal color (the write button included — it is no longer
+  amber), amber kept for chop and warnings, red for destructive actions. One interface
+  family (Inter) plus JetBrains Mono for figures.
+- Waveform colors live in `js/ui/waveform.js` (`waveColor`), no longer duplicated in
+  `main.js` and `ui/pad.js`.
+- Everything is written in English: app, README, this plan, comments.
+- Antoine's request (2026-08-19): this plan is updated *before* the commit and shipped
+  inside it, never as a catch-up commit. An entry therefore carries no SHA when written —
+  a commit cannot contain its own hash, and amending to insert one changes the very hash
+  it claims. The next plan update fills in the previous entry's SHA, once it is published
+  and stable. Recorded in the repo `CLAUDE.md`.
+- The brief called for a single HTML file; the real scope (banks, chop, resampling, undo,
+  disk access) broke it into ES modules served as-is. Still no build.
+- The service worker keeps no list of files to precache: the page sends it what it
+  actually just loaded (`performance.getEntriesByType`), plus the manifest and icons that
+  this API does not see. Nothing to update when adding a module.
+- *stale-while-revalidate* rather than a versioned cache: no version number to bump, at
+  the cost of being one reload behind after a change.
+- Pitch is baked into the written file as a speed change, not exposed as a P-6 parameter:
+  we resample to `sampleRate / 2^(cents/1200)` and declare the header at `sampleRate`.
+- Playback renders exactly the file that will be written, truncation included.
 
-- Le format de nommage `A1_` suppose que le P-6 importe par ordre alphabétique.
+## To verify
 
-## Suite possible
+- The `A1_` naming format assumes the P-6 imports in alphabetical order.
 
-- Presets de traitement, hash de doublons, découpe manuelle sur la waveform,
-  réordonnancement des pads par glisser-déposer.
+## Possible next steps
+
+- Processing presets, duplicate hashing, manual slicing on the waveform, reordering pads
+  by drag and drop.

@@ -14,6 +14,10 @@
 - [ ] Publier sur GitHub Pages pour se passer du serveur local — en attente de l'accord
       d'Antoine, ça rend le dépôt et l'app publics.
 
+- [x] 2026-08-19 — Specs Roland fournies par Antoine : 512 Kio par échantillon confirmé,
+      fréquences corrigées en 44100 / 22050 / 14700 / 11025 (32000 et 16000 n'existent
+      pas sur l'appareil).
+
 ## Décisions
 
 - Modèle retenu : 4 banques × 6 pads (le screenshot P-6), pas la liste à plat du brief.
@@ -38,8 +42,6 @@
 
 ## À vérifier
 
-- `MAX_PAD_BYTES` = 512 Kio est une hypothèse calée sur les durées du screenshot, pas
-  une donnée constructeur. À confronter à un vrai P-6.
 - Le format de nommage `A1_` suppose que le P-6 importe par ordre alphabétique.
 
 ## Suite possible

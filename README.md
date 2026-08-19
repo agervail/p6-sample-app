@@ -57,12 +57,23 @@ modification du code apparaît donc au deuxième rechargement**, pas au premier.
 - Les noms en double sont dédupliqués avant écriture (`_2`, `_3`).
 - Export en WAV PCM 16 bits, en-tête écrit à la main.
 
-## Hypothèses à ajuster
+## Contraintes du P-6
 
-`MAX_PAD_BYTES` dans `js/constants.js` vaut 512 Kio par pad — c'est la valeur qui
-reproduit les durées maximales observées (2,97 s en 44,1 kHz stéréo), pas une valeur
-lue dans la documentation Roland. Le nom du dossier cible (`IMPORT_FOLDER_NAME`) et la
-liste des fréquences proposées sont dans le même fichier.
+Un échantillon dispose de 512 Kio, soit en mono :
+
+| Fréquence | Durée maximale |
+|---|---|
+| 44,1 kHz | 5,94 s |
+| 22,05 kHz | 11,89 s |
+| 14,7 kHz | 17,83 s |
+| 11,025 kHz | 23,78 s |
+
+En stéréo, la moitié. Les fréquences sont des divisions entières de 44,1 kHz (÷1, ÷2,
+÷3, ÷4). La documentation Roland tronque ces durées à une décimale (5,9 s, 11,8 s…) ;
+l'application affiche la capacité réelle.
+
+`MAX_PAD_BYTES`, `SAMPLE_RATES` et le nom du dossier cible `IMPORT_FOLDER_NAME` sont
+dans `js/constants.js`.
 
 ## Limites assumées
 

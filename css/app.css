@@ -285,6 +285,43 @@ svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width:
   color: var(--ink-faint);
 }
 
+/* --- hint --- */
+
+.hint { position: relative; display: inline-flex; }
+.hint__mark {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--rule-strong);
+  border-radius: 50%;
+  color: var(--ink-faint);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: help;
+}
+.hint__mark:hover, .hint__mark:focus-visible { border-color: var(--signal); color: var(--signal); }
+.hint__bubble {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: -12px;
+  z-index: 2;
+  width: 340px;
+  padding: 14px 16px;
+  background: var(--surface-raised);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-float);
+  font-size: 13px;
+  color: var(--ink-dim);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--ease);
+}
+.hint:hover .hint__bubble, .hint:focus-within .hint__bubble { opacity: 1; visibility: visible; }
+.hint__steps { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 6px; }
+.hint__steps li::marker { color: var(--ink-faint); }
+
 /* --- toast --- */
 
 .toast {

@@ -75,6 +75,20 @@
 
   <footer class="actions">
     <button type="button" class="btn btn--primary" id="write-usb">Banks → key</button>
+
+    <span class="hint">
+      <button type="button" class="hint__mark" aria-describedby="import-steps">?</button>
+      <span class="hint__bubble" id="import-steps" role="tooltip">
+        <span class="label">Importing into the P-6</span>
+        <ol class="hint__steps">
+          <li>Connect your computer to the P-6’s USB port with a USB cable.</li>
+          <li>Hold down the [SAMPLING] button while turning on the power.</li>
+          <li>Open the “P-6” drive on your computer.</li>
+          <li>Copy the sample files you want to import into the pad folders (PAD_1–PAD_6)
+            in the “IMPORT” folder of the “P-6” drive.</li>
+        </ol>
+      </span>
+    </span>
     <button type="button" class="btn" id="read-usb">Key → banks</button>
     <button type="button" class="btn btn--danger" id="clear-bank">Clear bank</button>
     <button type="button" class="btn btn--danger" id="wipe-import">Erase IMPORT folder</button>

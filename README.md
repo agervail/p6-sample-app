@@ -1,8 +1,8 @@
 # P-6 Sample Manager
 
-USB key sample manager in the spirit of the Roland AIRA P-6: 4 banks of 6 pads, one WAV
+USB key sample manager in the spirit of the Roland AIRA P-6: 8 banks of 6 pads, one WAV
 per pad, per-pad settings (sample rate, mono, pitch, slicing), then sequential writing
-into the `IMPORT` folder of the key.
+into the `IMPORT` folder of the key, in the layout the device expects.
 
 A web page with no build step and no runtime dependency other than Google Fonts.
 Everything happens in the browser; there is no application server.
@@ -43,22 +43,29 @@ therefore shows up on the second reload**, not the first.
 - The red hatched area on the waveform shows what will not fit.
 - **Chop** cuts the sample into equal-length slices, either evenly or on detected
   transients, and replaces the sample with the result on the same pad.
-- **Banks → key** writes every bank, one file after another, in pad order.
+- **Banks → key** writes every loaded pad, one file after another, bank by bank.
   **Key → banks** reads the `IMPORT` folder back.
+- The **?** next to **Banks → key** recalls what to do on the device itself.
 - ⌘Z / ⇧⌘Z undo and redo pad changes.
 
 ## Writing conventions
 
-- Files are named `A1_name.wav`: bank letter, pad number, cleaned-up name (`NFD`,
-  diacritics stripped, `[^A-Za-z0-9._-]` replaced by `_`). The prefix makes the order
-  explicit whatever sort order the reader uses.
-- Writing is strictly sequential, by bank then by pad.
-- Duplicate names are deduplicated before writing (`_2`, `_3`).
+- One folder per pad: `IMPORT/BANK_A/PAD_1/name.WAV`, which is the layout the P-6 reads.
+  The folder carries the position, so the file name is free — it is the pad name cleaned
+  up (`NFD`, diacritics stripped, `[^A-Za-z0-9._-]` replaced by `_`), and the device
+  displays the first 15 characters of it.
+- Writing is strictly sequential, by bank then by pad, and only loaded pads are written.
+- Writing a pad first deletes the `WAV` and `PRM` already in its folder: the `PRM` holds
+  the frame count of the sample it came with, so keeping it next to a different sample
+  would describe something that is no longer there.
 - Export as 16-bit PCM WAV, with a hand-written header.
+- **Erase IMPORT folder** deletes the `WAV` and `PRM` files inside the pad folders and
+  leaves the folder tree in place — the device creates that tree, so it is not ours to
+  remove.
 
 ## P-6 constraints
 
-A sample gets 512 KiB, which in mono means:
+8 banks A–H of 6 pads, so 48 pads. A sample gets 512 KiB, which in mono means:
 
 | Sample rate | Maximum length |
 |---|---|
@@ -82,7 +89,10 @@ this app shows the real capacity.
   shown.
 - No volume ejection, that stays with the Finder. macOS clutter to clean up afterwards:
   `dot_clean -m /Volumes/MyKey`.
-- Non-audio WAV chunks (LIST/INFO, cue points) are lost on export.
+- Non-audio WAV chunks are lost on export, including the `PAD ` chunk the P-6 adds to the
+  files it exports — a binary copy of the pad settings.
+- Pad settings are not written: a `PRM` file could be generated (it is plain text), but
+  nothing here edits envelopes, filter or level yet.
 - Only the destination folder is remembered between sessions (IndexedDB); loaded samples
   are not.
 - The key handle is bound to the origin: moving from `localhost` to an `https://` domain

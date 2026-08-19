@@ -257,21 +257,22 @@ async function chooseDestination() {
   }
 }
 
-async function collectBankFiles() {
-  const files = [];
-  const taken = new Set();
+async function collectLoadedPads() {
+  const pads = [];
   for (const bankId of BANK_IDS) {
     const bank = store.getState().banks[bankId];
     for (const [padIndex, pad] of bank.pads.entries()) {
       if (!store.isPadLoaded(pad)) continue;
       const rendered = await renderPad(pad, bank.forceMono);
-      files.push({
-        name: usb.outputFileName(bankId, padIndex, pad.name, taken),
+      pads.push({
+        bankId,
+        padIndex,
+        fileName: usb.outputFileName(pad.name),
         blob: encodeWav(rendered.channels, rendered.sampleRate),
       });
     }
   }
-  return files;
+  return pads;
 }
 
 async function writeToDestination() {
@@ -279,43 +280,35 @@ async function writeToDestination() {
   if (!folder) return;
   try {
     showToast('Preparing the samples…');
-    const files = await collectBankFiles();
-    if (files.length === 0) {
+    const pads = await collectLoadedPads();
+    if (pads.length === 0) {
       showToast('No sample loaded', 'error');
       return;
     }
-    await usb.writeSequentially(folder, files, (written, total, name) => {
-      showToast(`${written}/${total} — ${name}`);
+    await usb.writePads(folder, pads, (written, total, path) => {
+      showToast(`${written}/${total} — ${path}`);
     });
-    showToast(`${files.length} files written to ${destinationText()}`, 'done');
+    showToast(`${pads.length} pads written to ${destinationText()}`, 'done');
   } catch (error) {
     reportFailure(error);
   }
-}
-
-function bankSlotFor(fileName, index) {
-  const parsed = usb.parsePadPrefix(fileName);
-  if (parsed && BANK_IDS.includes(parsed.bankId) && parsed.padIndex < PADS_PER_BANK) return parsed;
-  return { bankId: BANK_IDS[Math.floor(index / PADS_PER_BANK)], padIndex: index % PADS_PER_BANK };
 }
 
 async function readFromDestination() {
   const folder = await ensureDestination();
   if (!folder) return;
   try {
-    const files = await usb.listWavFiles(folder);
-    if (files.length === 0) {
-      showToast(`No WAV file in ${destinationText()}`, 'error');
+    const pads = await usb.readPads(folder);
+    if (pads.length === 0) {
+      showToast(`No sample in ${destinationText()}`, 'error');
       return;
     }
     const loadedPadsByBank = Object.fromEntries(BANK_IDS.map((bankId) => [bankId, []]));
-    for (const [index, file] of files.entries()) {
-      const slot = bankSlotFor(file.name, index);
-      if (!loadedPadsByBank[slot.bankId]) continue;
-      loadedPadsByBank[slot.bankId].push([slot.padIndex, await decodeWavFile(await file.handle.getFile())]);
+    for (const pad of pads) {
+      loadedPadsByBank[pad.bankId].push([pad.padIndex, await decodeWavFile(await pad.handle.getFile())]);
     }
     store.replaceAllBanks(loadedPadsByBank);
-    showToast(`${files.length} files read back from ${destinationText()}`, 'done');
+    showToast(`${pads.length} pads read back from ${destinationText()}`, 'done');
   } catch (error) {
     reportFailure(error);
   }
@@ -325,13 +318,13 @@ async function wipeImportFolder() {
   const folder = await ensureDestination();
   if (!folder) return;
   try {
-    const files = await usb.listWavFiles(folder);
+    const files = await usb.listPadFiles(folder);
     if (files.length === 0) {
       showToast(`${destinationText()} is already empty`);
       return;
     }
     if (!window.confirm(`Permanently delete ${files.length} files from ${destinationText()}?`)) return;
-    await usb.removeFiles(folder, files.map((file) => file.name));
+    await usb.removeFiles(files);
     showToast(`${files.length} files deleted`, 'done');
   } catch (error) {
     reportFailure(error);

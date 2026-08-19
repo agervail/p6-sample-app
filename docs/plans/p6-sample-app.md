@@ -26,11 +26,39 @@
 
 - [x] 2026-08-19 — Repo `CLAUDE.md` added: plan-before-commit sequence, the
       stale-while-revalidate reload trap, the language rule. Plan file and the last French
-      strings translated, so the whole repo is English.
+      strings translated, so the whole repo is English. Commit `8a344cc`, pushed to
+      `origin/main`.
+
+- [x] 2026-08-19 — **Real `IMPORT` layout, replacing the invented flat one.** The app wrote
+      `IMPORT/A1_name.wav` over 4 banks; the device reads
+      `IMPORT/BANK_A…BANK_H/PAD_1…PAD_6/one.WAV`. Now: 8 banks, one folder per pad, the
+      pad folder emptied of its `WAV`/`PRM` before writing, read-back walking the same
+      tree, and **Erase IMPORT folder** clearing pad files (plus any flat leftovers from
+      the previous version) while keeping the folder tree. Verified against a mock
+      directory tree — nested write, replacement of a pre-existing `P6_A-1.WAV`+`.PRM`,
+      read-back landing on the right bank and pad, erase leaving the skeleton — and in the
+      browser: 8 banks in the selector, no console error. Writing to a real key is still
+      untested, the directory picker needs a human.
+
+- [x] 2026-08-19 — Import steps from the owner's manual translated into English, behind a
+      **?** next to **Banks → key** (hover, and keyboard focus via `:focus-within`).
+      Verified in the browser: the bubble becomes visible on focus, sits above the footer,
+      340 px wide, `surface-raised` on `rule-strong`.
 
 ## Decisions
 
-- Model chosen: 4 banks × 6 pads (the P-6 screenshot), not the flat list from the brief.
+- Model: 8 banks × 6 pads, one WAV per pad, matching the device. It started at 4 banks from
+  a screenshot; the factory pack settled it.
+- The pad's position is carried by the folder, so the written file name is free. We keep the
+  sample name rather than the device's `P6_A-1` convention: the P-6 takes the pad name from
+  the file name, so `Kick-01.WAV` shows up as `Kick-01` instead of a coordinate.
+- Uppercase `.WAV`, like every file the device writes, rather than betting the firmware
+  matches extensions case-insensitively.
+- Writing a pad deletes the `WAV` and the `PRM` already in its folder. The `PRM` carries the
+  frame count of the sample it shipped with, so leaving it beside a different sample would
+  describe something that is no longer there.
+- **Erase IMPORT folder** removes files, never folders: the `BANK_x/PAD_n` tree is created
+  by the device.
 - Processing chosen: what the P-6 itself offers (sample rate, mono, pitch in cents, chop).
   Normalization, silence trimming and fades from the initial brief are out of V1.
 - Dark visual direction taken from the screenshot, but re-typeset: a single signal color,
@@ -41,7 +69,8 @@
   family (Inter) plus JetBrains Mono for figures.
 - Waveform colors live in `js/ui/waveform.js` (`waveColor`), no longer duplicated in
   `main.js` and `ui/pad.js`.
-- Everything is written in English: app, README, this plan, comments.
+- Everything is written in English: app, README, this plan, comments. The import steps in
+  the **?** bubble are our translation of the French owner's manual.
 - Antoine's request (2026-08-19): this plan is updated *before* the commit and shipped
   inside it, never as a catch-up commit. An entry therefore carries no SHA when written —
   a commit cannot contain its own hash, and amending to insert one changes the very hash
@@ -58,11 +87,80 @@
   we resample to `sampleRate / 2^(cents/1200)` and declare the header at `sampleRate`.
 - Playback renders exactly the file that will be written, truncation included.
 
+## P-6 disk format
+
+Sources: Roland owner's manual [import](https://static.roland.com/manuals/p-6/en-US/124651019124688651.html)
+and [export](https://static.roland.com/manuals/p-6/en-US/124639499124688139.html) pages, the
+support article [restoring the factory sample data](https://support.roland.com/hc/en-us/articles/29080746958619-P-6-How-to-Restore-Factory-Sample-Data-and-Patterns-After-a-Factory-Reset),
+and above all the factory sample pack Antoine unpacked to `~/Music/p6/factory_samples`,
+which is the real thing: 8 banks × 6 pads, a `WAV` and a `PRM` per pad, plus 16 pattern
+`PRM` files.
+
+- 8 banks A–H of 6 pads. The bank buttons are `[A/E]`–`[D/H]`: one press selects A–D, two
+  presses E–H.
+- Layout: `IMPORT/BANK_x/PAD_n/`, one WAV per pad folder. The owner's manual only names the
+  `PAD_1`–`PAD_6` folders; the `BANK_A`–`BANK_H` level is what the device actually shows.
+- **All 8 banks import in one pass** (Antoine, from the device). Roland's factory-restore
+  article splits the copy in two, A–D then E–H, but that is not a constraint of the import
+  itself. It is the *export* that goes one bank at a time — and we do not implement export.
+- Accepted on import: up to 96 kHz, 8/16/24/32-bit linear. Anything beyond the pad size is
+  truncated by the device itself.
+- The factory WAVs are 44.1 kHz 16-bit, mono or stereo, canonical 44-byte header, with a
+  trailing 88-byte `PAD ` chunk (`Roland  P-6`, then the pad settings in binary). We do not
+  write that chunk; the device does not need it to import.
+
+### `PRM` — the pad settings, and they are plain text
+
+`P6_A-1.PRM` is 825 bytes of `KEY\t= VALUE` lines, LF endings — not a binary blob. 62 named
+fields per pad:
+
+- position and playback: `PHRASE` (0–47, the flat pad index: A-1 = 0, H-6 = 47), `GATE`,
+  `LOOP`, `REVERSE`, `START_POS`, `MONO_POLY`, `MUTE_GROUP`, `CHOP` (1, 2, 4, 8, 16, 32).
+- length: `SIZE` and `LOOP_SIZE`, **in frames**, matching the WAV data chunk divided by its
+  block align exactly. The largest value in the factory pack is 262144 = 512 KiB of 16-bit
+  mono, which independently confirms `MAX_PAD_BYTES`.
+- tuning: `C.TUNE`, `F.TUNE`, `DETUNE`.
+- envelopes and filter: `PENV_*`, `TENV_*`, `TVF_*`, `TVA_SW`, `ENV_MODE`.
+- output: `LEVEL`, `PAN`, `PAN_MODE`, `OUTPUT_SEL`, `SEND_DELAY`, `SEND_REVERB`.
+- granular: `TM_STR_MODE`, `TM_STR_WINDOW`, `TM_STR_SPEED`; `LO-FI_SW`, `LO-FI`.
+- `PRM1`–`PRM16`, all zero across the 48 factory pads.
+
+They are optional on import — Roland only recommends copying them back when re-importing
+samples that came out of a P-6. Being plain text, they are also *writable*: emitting a
+`PRM` next to a sample would let the app preset chop, loop, reverse, level, pitch or filter
+instead of only shipping audio. Not done, and it needs testing on the device first.
+
+`PRM` is just Roland's parameter container here: the patterns use the same extension
+(`P6_PTN1-01.PRM`–`P6_PTN4-16.PRM`, restored through a separate `RESTORE` folder) with
+unrelated contents.
+
+### `info.txt`
+
+An export artifact, undocumented, absent from the factory pack. Antoine's file decodes
+exactly: 48 lines `<BANK>-<PAD>:\t<name>`, LF endings, 618 bytes for the content pasted in
+conversation — bank order A→H, pads 1→6. Names are capped at 15 characters
+(`Mallet Atmosphe`, `Mallet Reverse `), an untouched pad reads `P6_<BANK>-<PAD>`, and a pad
+recorded on the device gets a `_REC` suffix (`P6_C-1_REC`). A pad that received an imported
+file carries that file's name (`Kick-01`), which is what proves the device takes the pad
+name from the WAV file name.
+
+### Still unknown, only the device can answer
+
+- What the device does with more than one WAV in a pad folder (we write exactly one, and
+  delete what was there).
+- Whether `info.txt` is read on import — probably not — and whether a hand-written one
+  could set the pad names.
+- Whether a `PRM` written from scratch is accepted.
+- Whether the device cares about the `.WAV` case. We write uppercase, like the device does.
+
 ## To verify
 
-- The `A1_` naming format assumes the P-6 imports in alphabetical order.
+- ~~The `A1_` naming format assumes the P-6 imports in alphabetical order.~~ Moot: the
+  device addresses pads by folder, not by file name.
 
 ## Possible next steps
 
+- Write a `PRM` alongside each sample to preset the pad (chop, loop, reverse, level,
+  tuning) instead of shipping audio only. Needs a test on the device.
 - Processing presets, duplicate hashing, manual slicing on the waveform, reordering pads
   by drag and drop.

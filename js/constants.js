@@ -1,4 +1,4 @@
-export const BANK_IDS = ['A', 'B', 'C', 'D'];
+export const BANK_IDS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 export const PADS_PER_BANK = 6;
 
 export const SAMPLE_RATES = [44100, 22050, 14700, 11025];
@@ -13,7 +13,10 @@ export const PITCH_LIMIT_CENTS = 1200;
 export const WAVEFORM_BUCKETS = 1400;
 
 export const IMPORT_FOLDER_NAME = 'IMPORT';
-export const WAV_EXTENSION = '.wav';
+export const BANK_FOLDER_PREFIX = 'BANK_';
+export const PAD_FOLDER_PREFIX = 'PAD_';
+export const WAV_EXTENSION = '.WAV';
+export const PAD_SETTINGS_EXTENSION = '.PRM';
 export const MAX_FILE_NAME_LENGTH = 48;
 
 export const CHOP_SLICE_COUNTS = [2, 4, 8, 16];

@@ -33,6 +33,26 @@ export async function resampleChannels(channels, sourceRate, targetRate) {
   return Array.from({ length: rendered.numberOfChannels }, (unused, index) => rendered.getChannelData(index));
 }
 
+export function trimWindow(pad) {
+  return { start: pad.trimStart, end: pad.trimEnd };
+}
+
+export function offsetWithinTrim(sourceRatio, trim) {
+  const span = trim.end - trim.start;
+  return Math.min(1, Math.max(0, (sourceRatio - trim.start) / span));
+}
+
+function trimBounds(pad) {
+  const firstFrame = Math.floor(pad.trimStart * pad.source.frames);
+  const lastFrame = Math.max(firstFrame + 1, Math.round(pad.trimEnd * pad.source.frames));
+  return { firstFrame, lastFrame, frames: lastFrame - firstFrame };
+}
+
+function trimmedChannels(pad) {
+  const { firstFrame, lastFrame } = trimBounds(pad);
+  return pad.source.channels.map((channel) => channel.subarray(firstFrame, lastFrame));
+}
+
 export function outputChannelCount(pad, forceMono) {
   return pad.mono || forceMono ? 1 : pad.source.channels.length;
 }
@@ -40,7 +60,7 @@ export function outputChannelCount(pad, forceMono) {
 export function padMetrics(pad, forceMono) {
   const channelCount = outputChannelCount(pad, forceMono);
   const bytesPerFrame = channelCount * BYTES_PER_FRAME_PER_CHANNEL;
-  const seconds = pad.source.frames / pad.source.sampleRate / pitchRatio(pad.pitchCents);
+  const seconds = trimBounds(pad).frames / pad.source.sampleRate / pitchRatio(pad.pitchCents);
   const frames = Math.max(1, Math.round(seconds * pad.sampleRate));
   const maxFrames = Math.floor(MAX_PAD_BYTES / bytesPerFrame);
   const keptFrames = Math.min(frames, maxFrames);
@@ -62,7 +82,8 @@ function truncate(channels, frames) {
 
 export async function renderPad(pad, forceMono) {
   const metrics = padMetrics(pad, forceMono);
-  const folded = metrics.channelCount === 1 ? foldToMono(pad.source.channels) : pad.source.channels;
+  const trimmed = trimmedChannels(pad);
+  const folded = metrics.channelCount === 1 ? foldToMono(trimmed) : trimmed;
   const renderRate = Math.round(pad.sampleRate / pitchRatio(pad.pitchCents));
   const resampled = await resampleChannels(folded, pad.source.sampleRate, renderRate);
   return { channels: truncate(resampled, metrics.keptFrames), sampleRate: pad.sampleRate };

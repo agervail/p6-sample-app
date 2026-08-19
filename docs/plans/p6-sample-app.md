@@ -50,7 +50,8 @@
 - [x] 2026-08-19 — Bank navigation moved from a dropdown to `‹ A ›` arrows, at Antoine's
       request: 8 banks make a select a list to hunt through, two arrows make it one click.
       They wrap around, so H → A and A → H. Verified in the browser: forward through the
-      eight letters and back, wrap in both directions, no console error.
+      eight letters and back, wrap in both directions, no console error. Commit `00dc561`,
+      pushed to `origin/main`.
 
 - [x] 2026-08-19 — **Key → banks** replaced by **Save preset**: a ZIP of the complete
       `IMPORT` tree (`js/fs/zip.js` writes the archive by hand, stored entries, no
@@ -63,7 +64,7 @@
       files" steps were noise. Verified: a generated archive passes `unzip -t`, lists the 56
       folders and the samples with the right sizes and extracts to the right tree; in the
       browser, the footer shows **Save preset**, an empty set toasts `No sample loaded`, no
-      console error.
+      console error. Commit `00dc561`, pushed to `origin/main`.
 
 - [x] 2026-08-19 — **Load preset**, the other direction, at Antoine's request: `zip.js`
       gained a reader (central directory walk, stored and deflated entries via
@@ -75,7 +76,20 @@
       `__MACOSX` entries loads the two real samples and ignores the junk; a non-ZIP reports
       "This file is not a ZIP archive"; and in the page itself, encode → save → load →
       decode → banks puts a 440 Hz tone on A-1 and C-5 with the waveform and the sizes
-      right.
+      right. Commit `00dc561`, pushed to `origin/main`.
+
+- [x] 2026-08-19 — **Trim with a start and an end cursor**, at Antoine's request. The pad
+      carries `trimStart`/`trimEnd` as ratios of its source; `audio/process.js` cuts the
+      source to that window before folding, resampling and truncating, so the preview, the
+      figures, the truncation warning, the chop, the preset and the write all see the
+      trimmed sample and nothing else. `ui/trim.js` drags the two handles on the large
+      waveform (grab zone 9 px, minimum window 0.5 %), `ui/waveform.js` dims what is outside
+      and draws the grips, and **Reset trim** next to the length restores the full sample.
+      Verified in the browser on a 2 s tone: dragging both handles takes 2.00 s / 172 KB to
+      0.96 s / 83 KB, `renderPad` returns exactly the trimmed 42414 frames, one drag is one
+      undo step, clicking inside the window starts playback at that point (0.43 measured for
+      0.428 expected) and the playhead is drawn back at the same place, chopping a trimmed
+      pad chops the trimmed audio, **Reset trim** restores 2.00 s and disables itself.
 
 ## Decisions
 
@@ -128,6 +142,17 @@
 - Pitch is baked into the written file as a speed change, not exposed as a P-6 parameter:
   we resample to `sampleRate / 2^(cents/1200)` and declare the header at `sampleRate`.
 - Playback renders exactly the file that will be written, truncation included.
+- Trim is stored as ratios rather than frames, so it survives a rate or pitch change
+  untouched, and the waveform peaks — computed once on the whole source — stay the right
+  drawing for a trimmed pad.
+- The trim handles live on the large waveform only: the pad waveforms show the window but
+  are too small to grab an edge in. They edit the current pad, which is the one the panel
+  already describes.
+- A drag is one undo step, not one per pointer move: the first move records history
+  (`editPad`), the rest amend it (`continuePadEdit`).
+- Chopping resets the trim: chop rebuilds the pad source from the rendered — therefore
+  trimmed — audio, so the window would otherwise cut a second time into a sample that
+  already carries it.
 
 ## P-6 disk format
 
@@ -206,3 +231,5 @@ name from the WAV file name.
   tuning) instead of shipping audio only. Needs a test on the device.
 - Processing presets, duplicate hashing, manual slicing on the waveform, reordering pads
   by drag and drop.
+- Snapping the trim handles to zero crossings, and a fade in/out at the trim edges: a cut
+  in the middle of a period clicks.

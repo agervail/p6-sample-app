@@ -41,6 +41,9 @@ therefore shows up on the second reload**, not the first.
   will be written: resampling, mono and pitch are applied before the preview, and
   whatever exceeds the pad memory is cut off.
 - The red hatched area on the waveform shows what will not fit.
+- Dragging the handles at both ends of the large waveform trims the sample: the dimmed
+  parts are neither previewed nor written, and the size and length update as you drag.
+  **Reset trim** puts the whole sample back.
 - **Chop** cuts the sample into equal-length slices, either evenly or on detected
   transients, and replaces the sample with the result on the same pad.
 - **Banks → key** writes every loaded pad, one file after another, bank by bank.

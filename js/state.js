@@ -10,6 +10,8 @@ function createPad() {
     sampleRate: DEFAULT_SAMPLE_RATE,
     mono: false,
     pitchCents: 0,
+    trimStart: 0,
+    trimEnd: 1,
     sliceCount: 0,
   };
 }
@@ -76,12 +78,19 @@ export function editPad(padIndex, changes) {
   commit((banks) => Object.assign(banks[state.currentBankId].pads[padIndex], changes));
 }
 
+export function continuePadEdit(padIndex, changes) {
+  Object.assign(state.banks[state.currentBankId].pads[padIndex], changes);
+  notify();
+}
+
 export function loadPad(padIndex, sample) {
   editPad(padIndex, {
     name: sample.name,
     source: sample.source,
     peaks: sample.peaks,
     sliceCount: sample.sliceCount ?? 0,
+    trimStart: 0,
+    trimEnd: 1,
   });
 }
 

@@ -2,7 +2,7 @@ import { BANK_IDS, CHOP_SLICE_COUNTS, IMPORT_FOLDER_NAME, PADS_PER_BANK } from '
 import { formatBytes, formatSeconds } from './format.js';
 import { chopPad } from './audio/chop.js';
 import { decodeWavFile } from './audio/decode.js';
-import { padMetrics, renderPad } from './audio/process.js';
+import { offsetWithinTrim, padMetrics, renderPad, trimWindow } from './audio/process.js';
 import { play, playingPadIndex, progress, stop } from './audio/player.js';
 import { encodeWav } from './audio/wav.js';
 import { buildPreset, presetFileName, readPreset } from './fs/preset.js';
@@ -10,9 +10,11 @@ import * as store from './state.js';
 import * as usb from './fs/usb.js';
 import { loadDestinationHandle, saveDestinationHandle } from './fs/handleStore.js';
 import { createPadView } from './ui/pad.js';
-import { drawWaveform, positionFromPointer, waveColor } from './ui/waveform.js';
+import { createTrimControl } from './ui/trim.js';
+import { drawWaveform, waveColor } from './ui/waveform.js';
 
 const TOAST_DURATION_MS = 4000;
+const FULL_TRIM = { start: 0, end: 1 };
 const OFFLINE_EXTRA_ASSETS = ['manifest.json', 'icons/icon-192.png', 'icons/icon-512.png'];
 const WAV_PICKER_OPTIONS = {
   multiple: false,
@@ -37,6 +39,7 @@ const warningList = document.getElementById('warnings');
 const detailName = document.getElementById('detail-name');
 const detailLength = document.getElementById('detail-length');
 const detailCanvas = document.getElementById('detail-wave');
+const resetTrimButton = document.getElementById('reset-trim');
 const chopDialog = document.getElementById('chop-dialog');
 const chopTarget = document.getElementById('chop-target');
 const chopCount = document.getElementById('chop-count');
@@ -111,12 +114,16 @@ function renderDetail(playhead) {
     ? `${formatSeconds(metrics.seconds)} — memory ${formatSeconds(metrics.maxSeconds)} — ${formatBytes(metrics.bytes)}`
     : '';
 
+  resetTrimButton.disabled = !isLoaded || (pad.trimStart === FULL_TRIM.start && pad.trimEnd === FULL_TRIM.end);
+
   drawWaveform(detailCanvas, {
     peaks: pad.peaks,
     color: waveColor(isLoaded),
+    trim: trimWindow(pad),
     overflowStart: metrics?.isTruncated ? metrics.maxSeconds / metrics.seconds : null,
     playhead: playingPadIndex() === store.getState().selectedPadIndex ? playhead : null,
     sliceCount: pad.sliceCount,
+    trimGrips: isLoaded,
   });
 }
 
@@ -169,16 +176,17 @@ function followPlayhead() {
   playbackFrame = requestAnimationFrame(followPlayhead);
 }
 
-async function togglePlayback(padIndex, offsetRatio) {
+async function togglePlayback(padIndex, sourceRatio) {
   const bank = store.currentBank();
   const pad = bank.pads[padIndex];
   if (!store.isPadLoaded(pad)) return;
-  if (playingPadIndex() === padIndex && offsetRatio === 0) {
+  if (playingPadIndex() === padIndex && sourceRatio === null) {
     stop();
     stopPlayheadLoop();
     refresh();
     return;
   }
+  const offsetRatio = sourceRatio === null ? 0 : offsetWithinTrim(sourceRatio, trimWindow(pad));
   try {
     const rendered = await renderPad(pad, bank.forceMono);
     await play(padIndex, rendered.channels, rendered.sampleRate, offsetRatio, refresh);
@@ -229,6 +237,8 @@ async function applyChop() {
       peaks: chopped.peaks,
       sliceCount: chopped.sliceCount,
       pitchCents: 0,
+      trimStart: FULL_TRIM.start,
+      trimEnd: FULL_TRIM.end,
     });
     showToast(`${chopped.sliceCount} slices on PAD ${padIndex + 1}`, 'done');
   } catch (error) {
@@ -384,6 +394,19 @@ function buildPads() {
   }
 }
 
+function bindTrimControl() {
+  const selectedPadIndex = () => store.getState().selectedPadIndex;
+  const applyTrim = (edit) => (trim) => edit(selectedPadIndex(), { trimStart: trim.start, trimEnd: trim.end });
+
+  resetTrimButton.addEventListener('click', () => applyTrim(store.editPad)(FULL_TRIM));
+  createTrimControl(detailCanvas, {
+    trimOf: () => (store.isPadLoaded(store.currentPad()) ? trimWindow(store.currentPad()) : null),
+    onTrimBegin: applyTrim(store.editPad),
+    onTrimContinue: applyTrim(store.continuePadEdit),
+    onScrub: (sourceRatio) => togglePlayback(selectedPadIndex(), sourceRatio),
+  });
+}
+
 function buildSelectors() {
   chopCount.replaceChildren(...CHOP_SLICE_COUNTS.map((count) => new Option(String(count), String(count))));
   chopCount.value = String(CHOP_SLICE_COUNTS[2]);
@@ -418,9 +441,6 @@ function bindGlobalControls() {
     store.clearCurrentBank();
   });
   document.getElementById('wipe-import').addEventListener('click', wipeImportFolder);
-  detailCanvas.addEventListener('click', (event) => {
-    togglePlayback(store.getState().selectedPadIndex, positionFromPointer(detailCanvas, event));
-  });
   chopDialog.addEventListener('close', () => {
     if (chopDialog.returnValue === 'chop') applyChop();
   });
@@ -462,6 +482,7 @@ function start() {
   buildSelectors();
   buildPads();
   bindGlobalControls();
+  bindTrimControl();
   store.subscribe(render);
   renderDestination();
   registerServiceWorker();

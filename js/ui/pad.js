@@ -1,6 +1,6 @@
 import { PITCH_LIMIT_CENTS, PITCH_STEP_CENTS, SAMPLE_RATES } from '../constants.js';
 import { formatSeconds } from '../format.js';
-import { padMetrics } from '../audio/process.js';
+import { padMetrics, trimWindow } from '../audio/process.js';
 import { drawWaveform, positionFromPointer, waveColor } from './waveform.js';
 
 const EMPTY_LABEL = 'No sample';
@@ -38,7 +38,7 @@ export function createPadView(padIndex, handlers) {
 
   element.addEventListener('pointerdown', () => handlers.onSelect(padIndex));
   element.querySelector('[data-load]').addEventListener('click', () => handlers.onLoad(padIndex));
-  playButton.addEventListener('click', () => handlers.onPlay(padIndex, 0));
+  playButton.addEventListener('click', () => handlers.onPlay(padIndex, null));
   clearButton.addEventListener('click', () => handlers.onClear(padIndex));
   chopButton.addEventListener('click', () => handlers.onChop(padIndex));
   canvas.addEventListener('click', (event) => handlers.onPlay(padIndex, positionFromPointer(canvas, event)));
@@ -88,6 +88,7 @@ export function createPadView(padIndex, handlers) {
     drawWaveform(canvas, {
       peaks: pad.peaks,
       color: waveColor(isLoaded),
+      trim: trimWindow(pad),
       overflowStart: metrics?.isTruncated ? metrics.maxSeconds / metrics.seconds : null,
       playhead: isPlaying ? playhead : null,
       sliceCount: pad.sliceCount,

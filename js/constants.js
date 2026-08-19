@@ -11,6 +11,8 @@ export const PITCH_STEP_CENTS = 10;
 export const PITCH_LIMIT_CENTS = 1200;
 
 export const WAVEFORM_BUCKETS = 1400;
+export const TRIM_GRAB_PIXELS = 9;
+export const TRIM_MIN_SPAN_RATIO = 0.005;
 
 export const IMPORT_FOLDER_NAME = 'IMPORT';
 export const BANK_FOLDER_PREFIX = 'BANK_';

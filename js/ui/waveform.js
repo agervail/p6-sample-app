@@ -6,6 +6,16 @@ const OVERFLOW_FILL = 'rgba(229, 84, 75, 0.16)';
 const OVERFLOW_STROKE = 'rgba(229, 84, 75, 0.55)';
 const SLICE_STROKE = 'rgba(224, 165, 58, 0.55)';
 const PLAYHEAD_STROKE = '#E8EAED';
+const TRIM_MASK_FILL = 'rgba(10, 12, 15, 0.68)';
+const TRIM_STROKE = '#A0A7B4';
+const TRIM_GRIP_WIDTH = 5;
+const TRIM_GRIP_HEIGHT = 14;
+
+export const FULL_WINDOW = { start: 0, end: 1 };
+
+function withinWindow(trim, ratio) {
+  return trim.start + ratio * (trim.end - trim.start);
+}
 
 export function waveColor(isLoaded) {
   return isLoaded ? SIGNAL_COLOR : DIMMED_COLOR;
@@ -64,7 +74,35 @@ function drawVerticalLine(context, x, height, color, width) {
   context.stroke();
 }
 
-export function drawWaveform(canvas, { peaks, color, overflowStart = null, playhead = null, sliceCount = 0 }) {
+function drawGrip(context, edgeX, height, inwardSign) {
+  const left = inwardSign > 0 ? edgeX : edgeX - TRIM_GRIP_WIDTH;
+  context.fillRect(left, 0, TRIM_GRIP_WIDTH, TRIM_GRIP_HEIGHT);
+  context.fillRect(left, height - TRIM_GRIP_HEIGHT, TRIM_GRIP_WIDTH, TRIM_GRIP_HEIGHT);
+}
+
+function drawTrim(context, trim, width, height, withGrips) {
+  const startX = trim.start * width;
+  const endX = trim.end * width;
+  context.fillStyle = TRIM_MASK_FILL;
+  context.fillRect(0, 0, startX, height);
+  context.fillRect(endX, 0, width - endX, height);
+  if (trim.start > 0) drawVerticalLine(context, startX, height, TRIM_STROKE, 1);
+  if (trim.end < 1) drawVerticalLine(context, endX, height, TRIM_STROKE, 1);
+  if (!withGrips) return;
+  context.fillStyle = TRIM_STROKE;
+  drawGrip(context, startX, height, 1);
+  drawGrip(context, endX, height, -1);
+}
+
+export function drawWaveform(canvas, {
+  peaks,
+  color,
+  trim = FULL_WINDOW,
+  overflowStart = null,
+  playhead = null,
+  sliceCount = 0,
+  trimGrips = false,
+}) {
   const { context, width, height } = fitToDisplaySize(canvas);
   if (!peaks) return;
 
@@ -80,7 +118,7 @@ export function drawWaveform(canvas, { peaks, color, overflowStart = null, playh
   drawSignal(context, peaks, width, height, color);
 
   if (overflowStart !== null) {
-    const start = overflowStart * width;
+    const start = withinWindow(trim, overflowStart) * width;
     context.fillStyle = OVERFLOW_FILL;
     context.fillRect(start, 0, width - start, height);
     context.fillStyle = overflowPattern(context);
@@ -92,8 +130,10 @@ export function drawWaveform(canvas, { peaks, color, overflowStart = null, playh
     drawVerticalLine(context, (slice / sliceCount) * width, height, SLICE_STROKE, 1);
   }
 
+  drawTrim(context, trim, width, height, trimGrips);
+
   if (playhead !== null) {
-    drawVerticalLine(context, playhead * width, height, PLAYHEAD_STROKE, 1.5);
+    drawVerticalLine(context, withinWindow(trim, playhead) * width, height, PLAYHEAD_STROKE, 1.5);
   }
 }
 

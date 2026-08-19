@@ -10,6 +10,14 @@
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
+<div class="boot-notice" id="boot-notice" hidden>
+  <h1 class="boot-notice__title">Ouvre cette page depuis localhost</h1>
+  <p>En <code>file://</code>, Chrome donne une origine opaque à la page : les modules
+    JavaScript et l’accès au disque sont bloqués. Depuis le dossier du projet :</p>
+  <pre class="boot-notice__command">python3 -m http.server 8080</pre>
+  <p>puis <a href="http://localhost:8080">http://localhost:8080</a></p>
+</div>
+
 <div class="app">
 
   <header class="topbar">
@@ -135,6 +143,17 @@
   </article>
 </template>
 
+<script>
+(function () {
+  function showBootNotice() {
+    if (document.documentElement.dataset.booted === 'true') return;
+    document.getElementById('boot-notice').hidden = false;
+    document.querySelector('.app').hidden = true;
+  }
+  if (location.protocol === 'file:') showBootNotice();
+  else window.addEventListener('load', function () { setTimeout(showBootNotice, 300); });
+})();
+</script>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

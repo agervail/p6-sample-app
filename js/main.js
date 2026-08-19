@@ -405,6 +405,7 @@ function bindGlobalControls() {
 }
 
 function start() {
+  document.documentElement.dataset.booted = 'true';
   if (!usb.isSupported()) {
     showToast('Navigateur non compatible : ouvre cette page dans Chrome, Edge ou Brave', 'error');
   }

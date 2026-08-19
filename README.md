@@ -58,8 +58,8 @@ therefore shows up on the second reload**, not the first.
   the pad you choose, with its slice count already set.
 - **Banks → key** writes every loaded pad, one file after another, bank by bank.
 - The **?** next to **Banks → key** recalls what to do on the device itself.
-- **Save preset** saves the whole thing as a ZIP holding the complete `IMPORT` tree, so an
-  earlier preset goes back on the key by unzipping it there.
+- **Save preset** saves the whole thing as a ZIP holding the complete `IMPORT` tree, `PRM`
+  files included, so an earlier preset goes back on the key by unzipping it there.
 - **Load preset** reads such a ZIP back into the 8 banks. It takes the archive this app
   writes as well as one zipped from a key by the Finder — pads are placed by their
   `BANK_x/PAD_n` path, whatever wraps it.
@@ -75,6 +75,16 @@ therefore shows up on the second reload**, not the first.
 - Writing a pad first deletes the `WAV` and `PRM` already in its folder: the `PRM` holds
   the frame count of the sample it came with, so keeping it next to a different sample
   would describe something that is no longer there.
+- A **chopped** pad then gets a fresh `PRM` beside its `WAV`, same base name, so the pad
+  arrives on the device already set to the right number of slices. It is the device's own
+  plain-text format — 62 `KEY\t= VALUE` lines, LF endings — with `CHOP` at the section
+  count, `SIZE`/`LOOP_SIZE` at the frame count of the `WAV` written next to it, `PHRASE` at
+  the flat pad index (A-1 = 0 … H-6 = 47), and the other 58 fields at the values an
+  untouched factory pad carries. Unchopped pads get no `PRM`: the device's defaults are
+  already what we would write.
+- A chop the device cannot express — transient placement can return a count like 3, and the
+  P-6 chops into 1, 2, 4, 8, 16 or 32 — gets no `PRM`, and the Memory panel says so rather
+  than shipping a file that describes the wrong grid.
 - Export as 16-bit PCM WAV, with a hand-written header.
 - A preset is a hand-written ZIP (stored, no compression — WAV barely compresses) carrying
   the full `IMPORT/BANK_A…BANK_H/PAD_1…PAD_6/` tree, empty pad folders included, so
@@ -112,8 +122,13 @@ this app shows the real capacity.
   `dot_clean -m /Volumes/MyKey`.
 - Non-audio WAV chunks are lost on export, including the `PAD ` chunk the P-6 adds to the
   files it exports — a binary copy of the pad settings.
-- Pad settings are not written: a `PRM` file could be generated (it is plain text), but
-  nothing here edits envelopes, filter or level yet.
+- Only the chop is written to a `PRM`. Envelopes, filter, level, tuning, loop and reverse
+  go out at the factory defaults because nothing here edits them yet — with one deliberate
+  exception, `SEND_REVERB`, written at 0 rather than pad A-1's 30 so an imported sample
+  gets no reverb it did not ask for.
+- Whether the device reads a `PRM` written from scratch is untested — only the hardware can
+  answer. The file is byte-compatible with the factory ones, and the pad still imports from
+  its `WAV` alone if the `PRM` is ignored.
 - Only the destination folder is remembered between sessions (IndexedDB); loaded samples
   are not — **Save preset** is what keeps a set of banks.
 - The key handle is bound to the origin: moving from `localhost` to an `https://` domain

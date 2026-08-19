@@ -56,6 +56,10 @@ export function outputFileName(padName) {
   return `${sanitizeFileName(padName)}${WAV_EXTENSION}`;
 }
 
+export function settingsFileName(padName) {
+  return `${sanitizeFileName(padName)}${PAD_SETTINGS_EXTENSION}`;
+}
+
 function hasExtension(name, extension) {
   return name.toUpperCase().endsWith(extension);
 }
@@ -107,14 +111,19 @@ async function dropPreviousSample(folder) {
   for (const name of await fileNames(folder, isPadFile)) await folder.removeEntry(name);
 }
 
+async function writeFile(folder, name, blob) {
+  const handle = await folder.getFileHandle(name, CREATE);
+  const writable = await handle.createWritable();
+  await writable.write(blob);
+  await writable.close();
+}
+
 export async function writePads(importFolder, pads, onProgress) {
   for (const [index, pad] of pads.entries()) {
     const folder = await padFolder(importFolder, pad.bankId, pad.padIndex);
     await dropPreviousSample(folder);
-    const handle = await folder.getFileHandle(pad.fileName, CREATE);
-    const writable = await handle.createWritable();
-    await writable.write(pad.blob);
-    await writable.close();
+    await writeFile(folder, pad.fileName, pad.blob);
+    if (pad.settings) await writeFile(folder, pad.settings.fileName, pad.settings.blob);
     onProgress(index + 1, pads.length, padPath(pad.bankId, pad.padIndex));
   }
 }

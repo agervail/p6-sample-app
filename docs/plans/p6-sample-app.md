@@ -114,7 +114,8 @@
       sections with the slice markers on the boundaries, plays for its full 1.20 s and is one
       undo step; a 32-sample kit builds, a 33rd is refused; a text file is refused inside the
       dialog; bank **Force mono** locks the kit to mono. Writing such a kit to a real key and
-      chopping it on the device is untested — that needs the hardware.
+      chopping it on the device is untested — that needs the hardware. Commit `897fbe5`, pushed
+      to `origin/main`.
 
 - [x] 2026-08-19 — **Live section ceilings in the kit dialog**, at Antoine's request: the
       512 KiB budget divided by the section count told the user nothing while it only appeared
@@ -134,7 +135,33 @@
       selecting 11025 Hz moves the highlight, a 2000 ms section flags 44100 and 22050 only, a
       900 ms section over 8 mono sections flags 44100 alone and following the row to 22050
       takes 620 KB to 310 KB and re-enables **Build kit**. At 375 px the label stacks and the
-      chips wrap inside the dialog.
+      chips wrap inside the dialog. Commit `897fbe5`, pushed to `origin/main`.
+
+- [x] 2026-08-19 — **A `PRM` is written next to a chopped sample**, at Antoine's request, so
+      the pad arrives on the device already set to the right number of slices instead of
+      asking the user to turn CHOP by hand. The field table in `js/fs/padSettings.js` was
+      *generated from* `~/Music/p6/factory_samples/BANK_A/PAD_1/P6_A-1.PRM` rather than
+      transcribed: 62 fields, the device's order, `KEY\t= VALUE`, LF, trailing newline. An
+      analysis of all 48 factory pads settled the defaults — pad A-1 turns out to hold the
+      modal value of every single field, which is what makes it the neutral template — and
+      four fields are written per pad: `PHRASE` (flat pad index), `SIZE` and `LOOP_SIZE` (the
+      frame count of the WAV written beside it) and `CHOP`. `SEND_REVERB` is the one
+      deliberate departure from A-1, written at 0 (the pack's modal value, 31/48) rather than
+      A-1's 30, so an imported sample gets no reverb it did not ask for. `usb.writePads` and
+      `preset.buildPreset` both emit it, so a preset carries the chop too.
+      Verified: 28 headless assertions against the factory files — field order identical, LF
+      only, one trailing newline, and for the real chopped pad H-3 the generated file
+      reproduces the device's own `PHRASE = 44`, `SIZE = 124518` and `CHOP = 8`, with every
+      remaining field equal to A-1's except `SEND_REVERB`; `PHRASE` checked against all 48
+      factory pads. The preset path builds an archive that passes `unzip -t` and extracts
+      `IMPORT/BANK_C/PAD_5/kit8_kick.PRM` beside its `WAV` with `PHRASE = 16`. `writePads`,
+      driven through a mock directory handle, writes both files for a chopped pad, only the
+      `WAV` for a plain one, and drops the stale `P6_A-1.WAV`+`.PRM` pair first. In the page,
+      a transient chop that returned 3 slices raises `PAD 1 — 3 sections, but the P-6 chops
+      into 1, 2, 4, 8, 16, 32, so no .PRM is written` in the Memory panel, and re-chopping
+      into 4 clears it. Clicking **Banks → key** and **Save preset** through to a real disk
+      still needs a human for the picker, and whether the device accepts a hand-written `PRM`
+      still needs the hardware.
 
 ## Decisions
 
@@ -222,6 +249,29 @@
   the unit of the section input they constrain, while the figures below stay in seconds.
 - Mono versus stereo is not a fifth column: the row already updates when the layout changes,
   and eight numbers would stop being readable at a glance.
+- The `PRM` is written for chopped pads only. For an unchopped pad every field would be the
+  factory default, which is what the device already applies — the file would carry no
+  information and would only add a guess about a format we cannot test.
+- The field table is generated from the factory `P6_A-1.PRM`, not typed in: 62 fields whose
+  order the firmware may care about is exactly the kind of table a hand copy gets subtly
+  wrong. Regenerate it from the pack rather than editing it in place.
+- Pad A-1 is the template because the 48-pad analysis showed it holds the modal value of
+  every field, not because it is first. `SEND_REVERB` is the single exception, taken at the
+  pack's mode of 0 instead of A-1's 30.
+- The `PRM` takes the **base name of the WAV** (`kit4_kick.PRM`), not the device's
+  `P6_A-1.PRM` coordinate name. Both are guesses about how the firmware pairs the two files,
+  but base-name matching also works if it simply reads the one `PRM` in the pad folder,
+  whereas the coordinate name only works in that second case. The factory pack pairs
+  matching base names in all 48 folders, which is consistent with either rule.
+- `LOOP_SIZE` is written equal to `SIZE`, as every untouched factory pad has it, and as all
+  nine chopped factory pads have it.
+- A chop count the device cannot express (transient placement can return 3) produces no
+  `PRM` and a warning in the Memory panel, rather than a `PRM` claiming a grid the device
+  would not use. Rounding such a chop up to a legal count, the way the kit builder does,
+  would change what **Chop** produces and was not asked for.
+- `SIZE` need not divide by `CHOP`: factory pad A-5 is `CHOP = 32` over 255036 frames, and
+  H-1 is `CHOP = 16` over 124518. The device handles the remainder itself, so our even chop
+  and its floor division are well within what the format tolerates.
 
 ## P-6 disk format
 
@@ -262,9 +312,23 @@ fields per pad:
 - `PRM1`–`PRM16`, all zero across the 48 factory pads.
 
 They are optional on import — Roland only recommends copying them back when re-importing
-samples that came out of a P-6. Being plain text, they are also *writable*: emitting a
-`PRM` next to a sample would let the app preset chop, loop, reverse, level, pitch or filter
-instead of only shipping audio. Not done, and it needs testing on the device first.
+samples that came out of a P-6. Being plain text, they are also *writable*, and **we now
+write one beside a chopped sample** (`js/fs/padSettings.js`): `CHOP` at the section count,
+`SIZE`/`LOOP_SIZE` at the frame count of the WAV, `PHRASE` at the flat pad index, and the
+other 58 fields at the values an untouched factory pad carries. Loop, reverse, level, tuning
+and the envelopes stay at those defaults because nothing in the app edits them yet.
+
+Measured across the 48 factory pads, which is what the writer is built on:
+
+- Pad A-1 holds the **modal value of every one of the 62 fields**, so it is the neutral
+  template. Only `SEND_REVERB` is written differently (0, the pack's mode at 31/48, against
+  A-1's 30).
+- `PHRASE` is the flat pad index, unique per pad, `BANK_x` order A→H: H-3 is 44 = 7 × 6 + 2.
+- `SIZE` equals the WAV's frame count for 46 of the 48 pads. The two exceptions (D-5, E-5)
+  hold *less* than the file, so `SIZE` describes the portion in use rather than the file
+  length — we always write the whole file.
+- `CHOP` takes 6 distinct values across the pack: 1, 2, 4, 8, 16, 32, confirming the list.
+- File length is 822–834 bytes, the variation being digit counts, not fields.
 
 `PRM` is just Roland's parameter container here: the patterns use the same extension
 (`P6_PTN1-01.PRM`–`P6_PTN4-16.PRM`, restored through a separate `RESTORE` folder) with
@@ -286,7 +350,11 @@ name from the WAV file name.
   delete what was there).
 - Whether `info.txt` is read on import — probably not — and whether a hand-written one
   could set the pad names.
-- Whether a `PRM` written from scratch is accepted.
+- Whether a `PRM` written from scratch is accepted. Ours is byte-compatible with the factory
+  files and reproduces a real chopped pad's fields exactly, but only the device can confirm
+  it reads one it did not write. If it refuses, the pad still imports from its `WAV` alone.
+- Whether the firmware pairs the `PRM` with the `WAV` by base name or just reads the single
+  `PRM` in the pad folder. We write the WAV's base name, which satisfies both readings.
 - Whether the device cares about the `.WAV` case. We write uppercase, like the device does.
 
 ## To verify
@@ -296,14 +364,14 @@ name from the WAV file name.
 
 ## Possible next steps
 
-- Write a `PRM` alongside each sample to preset the pad (chop, loop, reverse, level,
-  tuning) instead of shipping audio only. Needs a test on the device.
+- Extend the `PRM` beyond the chop — loop, reverse, level, tuning, filter — once the app has
+  controls for them and the device has confirmed it reads a hand-written one.
+- Read `CHOP` back when loading a preset: the archive now carries it, but `readPreset` still
+  matches `.WAV` entries only, so a chopped pad comes back without its slice markers.
 - Processing presets, duplicate hashing, manual slicing on the waveform, reordering pads
   by drag and drop.
 - Snapping the trim handles to zero crossings, and a fade in/out at the trim edges: a cut
   in the middle of a period clicks.
 - Same inside a kit: a sample cut at its section boundary clicks, and a fade at the section
   edges would fix it.
-- Writing the kit's section count into a `PRM` as `CHOP`, so the pad arrives already chopped
-  instead of asking the user to set CHOP by hand on the device.
 

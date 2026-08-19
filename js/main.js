@@ -1,10 +1,18 @@
-import { BANK_IDS, CHOP_SLICE_COUNTS, IMPORT_FOLDER_NAME, PADS_PER_BANK } from './constants.js';
+import {
+  BANK_IDS,
+  CHOP_SLICE_COUNTS,
+  IMPORT_FOLDER_NAME,
+  P6_CHOP_VALUES,
+  PADS_PER_BANK,
+  PAD_SETTINGS_EXTENSION,
+} from './constants.js';
 import { formatBytes, formatSeconds } from './format.js';
 import { chopPad } from './audio/chop.js';
 import { decodeWavFile } from './audio/decode.js';
 import { offsetWithinTrim, padMetrics, renderPad, trimWindow } from './audio/process.js';
 import { play, playingPadIndex, progress, stop } from './audio/player.js';
 import { encodeWav } from './audio/wav.js';
+import { isChopValue, isChopped, padSettings } from './fs/padSettings.js';
 import { buildPreset, presetFileName, readPreset } from './fs/preset.js';
 import * as store from './state.js';
 import * as usb from './fs/usb.js';
@@ -94,11 +102,18 @@ function truncationWarnings(bank) {
   });
 }
 
+function chopWarnings(bank) {
+  return bank.pads.flatMap((pad, padIndex) => {
+    if (!store.isPadLoaded(pad) || !isChopped(pad.sliceCount) || isChopValue(pad.sliceCount)) return [];
+    return [`PAD ${padIndex + 1} — ${pad.sliceCount} sections, but the P-6 chops into ${P6_CHOP_VALUES.join(', ')}, so no ${PAD_SETTINGS_EXTENSION} is written`];
+  });
+}
+
 function renderStorage(state) {
   const bank = store.currentBank();
   bankSizeNode.textContent = formatBytes(bankBytes(bank));
   totalSizeNode.textContent = formatBytes(BANK_IDS.reduce((total, bankId) => total + bankBytes(state.banks[bankId]), 0));
-  warningList.replaceChildren(...truncationWarnings(bank).map((text) => {
+  warningList.replaceChildren(...[...truncationWarnings(bank), ...chopWarnings(bank)].map((text) => {
     const item = document.createElement('li');
     item.textContent = text;
     return item;
@@ -297,6 +312,14 @@ function hasLoadedPad() {
   return BANK_IDS.some((bankId) => banks[bankId].pads.some(store.isPadLoaded));
 }
 
+function settingsFor(pad, bankId, padIndex, frames) {
+  if (!isChopped(pad.sliceCount) || !isChopValue(pad.sliceCount)) return null;
+  return {
+    fileName: usb.settingsFileName(pad.name),
+    blob: padSettings({ bankId, padIndex, frames, sliceCount: pad.sliceCount }),
+  };
+}
+
 async function collectLoadedPads() {
   const pads = [];
   for (const bankId of BANK_IDS) {
@@ -309,10 +332,17 @@ async function collectLoadedPads() {
         padIndex,
         fileName: usb.outputFileName(pad.name),
         blob: encodeWav(rendered.channels, rendered.sampleRate),
+        settings: settingsFor(pad, bankId, padIndex, rendered.channels[0].length),
       });
     }
   }
   return pads;
+}
+
+function chopNote(pads) {
+  const chopped = pads.filter((pad) => pad.settings !== null).length;
+  if (chopped === 0) return '';
+  return `, ${chopped} with a ${PAD_SETTINGS_EXTENSION}`;
 }
 
 async function writeToDestination() {
@@ -328,7 +358,7 @@ async function writeToDestination() {
     await usb.writePads(folder, pads, (written, total, path) => {
       showToast(`${written}/${total} — ${path}`);
     });
-    showToast(`${pads.length} pads written to ${destinationText()}`, 'done');
+    showToast(`${pads.length} pads written to ${destinationText()}${chopNote(pads)}`, 'done');
   } catch (error) {
     reportFailure(error);
   }
@@ -349,7 +379,7 @@ async function savePreset() {
     const writable = await handle.createWritable();
     await writable.write(await buildPreset(pads, new Date()));
     await writable.close();
-    showToast(`${pads.length} pads saved to ${handle.name}`, 'done');
+    showToast(`${pads.length} pads saved to ${handle.name}${chopNote(pads)}`, 'done');
   } catch (error) {
     reportFailure(error);
   }

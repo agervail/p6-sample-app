@@ -27,12 +27,15 @@ export function presetFileName(now) {
   return `${PRESET_NAME_PREFIX}${day}_${time}${PRESET_EXTENSION}`;
 }
 
+function padEntries(pad) {
+  const folder = `${IMPORT_FOLDER_NAME}/${padPath(pad.bankId, pad.padIndex)}`;
+  const sample = { path: `${folder}/${pad.fileName}`, blob: pad.blob };
+  if (!pad.settings) return [sample];
+  return [sample, { path: `${folder}/${pad.settings.fileName}`, blob: pad.settings.blob }];
+}
+
 export function buildPreset(pads, now) {
-  const samples = pads.map((pad) => ({
-    path: `${IMPORT_FOLDER_NAME}/${padPath(pad.bankId, pad.padIndex)}/${pad.fileName}`,
-    blob: pad.blob,
-  }));
-  return zipArchive([...importTree(), ...samples], now);
+  return zipArchive([...importTree(), ...pads.flatMap(padEntries)], now);
 }
 
 export async function readPreset(archive) {

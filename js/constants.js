@@ -25,3 +25,7 @@ export const CHOP_SLICE_COUNTS = [2, 4, 8, 16];
 export const CHOP_ENVELOPE_HOP_MS = 10;
 export const CHOP_ONSET_RISE_FACTOR = 2.2;
 export const CHOP_MIN_SLICE_MS = 60;
+
+export const P6_CHOP_VALUES = [1, 2, 4, 8, 16, 32];
+export const KIT_MIN_SLICE_MS = 10;
+export const KIT_SLICE_STEP_MS = 10;

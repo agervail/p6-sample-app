@@ -97,6 +97,7 @@
         </ol>
       </span>
     </span>
+    <button type="button" class="btn btn--accent" id="build-kit">Build kit</button>
     <button type="button" class="btn" id="save-preset">Save preset</button>
     <button type="button" class="btn" id="load-preset">Load preset</button>
     <button type="button" class="btn btn--danger" id="clear-bank">Clear bank</button>
@@ -129,6 +130,92 @@
     </div>
   </form>
 </dialog>
+
+<dialog class="dialog dialog--wide" id="kit-dialog">
+  <div class="dialog__body">
+    <h2 class="panel-title">Build a chop kit</h2>
+    <p class="dialog__note">Several samples become one pad of equal-length sections, so the
+      P-6’s CHOP lands exactly on their boundaries. A shorter sample is padded with silence, a
+      longer one is cut, and the count is rounded up to a chop value the device offers.</p>
+
+    <div class="kit" id="kit-drop">
+      <ol class="kit__list" id="kit-list"></ol>
+      <button type="button" class="btn" id="kit-add">Add samples…</button>
+    </div>
+
+    <div class="kit__controls">
+      <div class="row">
+        <span class="label">Section</span>
+        <input type="number" class="input mono" id="kit-slice" aria-label="Section length in milliseconds">
+        <span class="unit">ms</span>
+        <button type="button" class="btn btn--quiet" id="kit-longest">Longest sample</button>
+      </div>
+
+      <div class="row">
+        <span class="label">Rate</span>
+        <select class="select" id="kit-rate" aria-label="Kit sample rate"></select>
+        <label class="check"><input type="checkbox" id="kit-mono"><span>Mono</span></label>
+      </div>
+
+      <div class="row">
+        <span class="label">Destination</span>
+        <select class="select" id="kit-pad" aria-label="Destination pad"></select>
+      </div>
+
+      <div class="row">
+        <span class="label">Max section</span>
+        <div class="kit__limits" id="kit-limits"></div>
+      </div>
+    </div>
+
+    <div class="kit__figures">
+      <div class="figure">
+        <span class="label">Sections</span>
+        <strong class="figure__value" id="kit-sections">—</strong>
+      </div>
+      <div class="figure">
+        <span class="label">Length</span>
+        <strong class="figure__value" id="kit-length">—</strong>
+      </div>
+      <div class="figure">
+        <span class="label">Size</span>
+        <strong class="figure__value" id="kit-size">—</strong>
+      </div>
+    </div>
+
+    <p class="kit__message" id="kit-message"></p>
+
+    <div class="dialog__actions">
+      <button type="button" class="btn btn--quiet" id="kit-cancel">Cancel</button>
+      <button type="button" class="btn btn--accent" id="kit-build">Build kit</button>
+    </div>
+  </div>
+</dialog>
+
+<template id="kit-limit-template">
+  <span class="kit__limit">
+    <span class="kit__limit-rate" data-rate></span>
+    <span class="kit__limit-value mono" data-value></span>
+  </span>
+</template>
+
+<template id="kit-item-template">
+  <li class="kit__item">
+    <span class="kit__index mono" data-index></span>
+    <canvas class="kit__wave" data-wave height="34"></canvas>
+    <span class="kit__name" data-name></span>
+    <span class="kit__length mono" data-length></span>
+    <button type="button" class="btn btn--icon btn--quiet" data-up aria-label="Move up">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 12l6-6 6 6"/></svg>
+    </button>
+    <button type="button" class="btn btn--icon btn--quiet" data-down aria-label="Move down">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 8l6 6 6-6"/></svg>
+    </button>
+    <button type="button" class="btn btn--icon btn--quiet btn--danger" data-remove aria-label="Remove from the kit">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg>
+    </button>
+  </li>
+</template>
 
 <template id="pad-template">
   <article class="pad">

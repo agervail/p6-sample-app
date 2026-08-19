@@ -9,6 +9,7 @@ import { buildPreset, presetFileName, readPreset } from './fs/preset.js';
 import * as store from './state.js';
 import * as usb from './fs/usb.js';
 import { loadDestinationHandle, saveDestinationHandle } from './fs/handleStore.js';
+import { createKitDialog } from './ui/kit.js';
 import { createPadView } from './ui/pad.js';
 import { createTrimControl } from './ui/trim.js';
 import { drawWaveform, waveColor } from './ui/waveform.js';
@@ -50,6 +51,7 @@ let destination = null;
 let destinationNeedsPermission = false;
 let playbackFrame = null;
 let toastTimer = null;
+let kitDialog = null;
 const padViews = [];
 
 function showToast(message, kind = 'info') {
@@ -246,6 +248,23 @@ async function applyChop() {
   }
 }
 
+function applyKit(padIndex, kit) {
+  if (playingPadIndex() === padIndex) stop();
+  store.editPad(padIndex, {
+    name: kit.name,
+    source: kit.source,
+    peaks: kit.peaks,
+    sliceCount: kit.sliceCount,
+    sampleRate: kit.sampleRate,
+    mono: kit.mono,
+    pitchCents: 0,
+    trimStart: FULL_TRIM.start,
+    trimEnd: FULL_TRIM.end,
+  });
+  store.selectPad(padIndex);
+  showToast(`${kit.sliceCount} sections on PAD ${padIndex + 1} — set CHOP to ${kit.sliceCount}`, 'done');
+}
+
 async function ensureDestination() {
   if (!destination) {
     showToast('Select the destination USB key first', 'error');
@@ -374,6 +393,15 @@ async function wipeImportFolder() {
   }
 }
 
+function openKitDialog() {
+  const state = store.getState();
+  kitDialog.open({
+    padIndex: state.selectedPadIndex,
+    bankId: state.currentBankId,
+    forceMono: store.currentBank().forceMono,
+  });
+}
+
 function buildPads() {
   const handlers = {
     onSelect: store.selectPad,
@@ -434,6 +462,7 @@ function bindGlobalControls() {
   undoButton.addEventListener('click', store.undo);
   redoButton.addEventListener('click', store.redo);
   document.getElementById('write-usb').addEventListener('click', writeToDestination);
+  document.getElementById('build-kit').addEventListener('click', openKitDialog);
   document.getElementById('save-preset').addEventListener('click', savePreset);
   document.getElementById('load-preset').addEventListener('click', loadPreset);
   document.getElementById('clear-bank').addEventListener('click', () => {
@@ -481,6 +510,7 @@ function start() {
   }
   buildSelectors();
   buildPads();
+  kitDialog = createKitDialog({ onBuilt: applyKit });
   bindGlobalControls();
   bindTrimControl();
   store.subscribe(render);

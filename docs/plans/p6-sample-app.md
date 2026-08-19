@@ -89,7 +89,52 @@
       0.96 s / 83 KB, `renderPad` returns exactly the trimmed 42414 frames, one drag is one
       undo step, clicking inside the window starts playback at that point (0.43 measured for
       0.428 expected) and the playhead is drawn back at the same place, chopping a trimmed
-      pad chops the trimmed audio, **Reset trim** restores 2.00 s and disables itself.
+      pad chops the trimmed audio, **Reset trim** restores 2.00 s and disables itself. Commit
+      `4c9c38a`, pushed to `origin/main`.
+
+- [x] 2026-08-19 — **Build kit**, at Antoine's request: combine several WAVs into one pad of
+      equal-length sections so the whole thing can be chopped. `js/audio/combine.js` lays each
+      source into its own section — channel-matched (folded to mono, or a mono source
+      duplicated across a stereo kit), resampled to the kit rate, padded with silence when
+      shorter than the section and cut when longer — and the section count is rounded **up to
+      a value the device's CHOP offers** (`P6_CHOP_VALUES` = 1, 2, 4, 8, 16, 32), the spare
+      sections staying silent. That rounding is the point of the feature: 3 samples in a
+      3-section file leave the device's chop grid off every boundary. `js/ui/kit.js` drives the
+      dialog: drop or pick the samples, reorder and remove them, a section length in ms
+      (defaulting to the longest sample, restored by **Longest sample**), rate, mono, and the
+      destination pad. The kit lands through `store.editPad` with `sliceCount`, `sampleRate`
+      and `mono` set, so `renderPad` is a passthrough and the written file is exactly what was
+      assembled.
+      Verified headless (35 assertions on the assembly: section boundaries, silence padding,
+      truncation, mono fold, mono→stereo duplication, byte budget, the 32-source ceiling) and
+      in the browser: 3 samples of 0.30 / 0.12 / 0.05 s at three different rates become 4
+      sections of 0.30 s, 207 KB, the 4th silent; reorder and remove renumber and resize; a 4 s
+      section turns the size red, disables **Build kit** and reads back the 2.97 s a section
+      can hold; 22050 Hz halves it and re-enables the button; the built pad shows 4 equal
+      sections with the slice markers on the boundaries, plays for its full 1.20 s and is one
+      undo step; a 32-sample kit builds, a 33rd is refused; a text file is refused inside the
+      dialog; bank **Force mono** locks the kit to mono. Writing such a kit to a real key and
+      chopping it on the device is untested — that needs the hardware.
+
+- [x] 2026-08-19 — **Live section ceilings in the kit dialog**, at Antoine's request: the
+      512 KiB budget divided by the section count told the user nothing while it only appeared
+      inside the overflow error. A **Max section** row now shows, for the current section count
+      and channel layout, the longest section each of the four sample rates can hold — the
+      selected rate highlighted, any rate too short for the current section length flagged —
+      so choosing a section length and a rate is reading a row instead of guessing and waiting
+      for the error. `maxSectionSeconds({ sections, channelCount, sampleRate })` is exported
+      from `audio/combine.js` for it, and the `maxSliceSeconds` field it replaces is gone from
+      `kitMetrics` rather than left unused. The overflow message no longer suggests a longer
+      rate — it did so even when every rate was too short — and points at the row instead.
+      Verified headless (4 assertions: the ceiling halves in stereo exactly as it does when the
+      section count doubles, doubles at half the rate, and a single section comes out at the
+      5.94 s the README documents for a whole pad at 44.1 kHz mono) and in the browser: 4
+      samples mono at 44100 read 1486 / 2972 / 4458 / 5944 ms, adding a 5th moves the kit to 8
+      sections and every ceiling halves, dropping a stereo sample in halves them again,
+      selecting 11025 Hz moves the highlight, a 2000 ms section flags 44100 and 22050 only, a
+      900 ms section over 8 mono sections flags 44100 alone and following the row to 22050
+      takes 620 KB to 310 KB and re-enables **Build kit**. At 375 px the label stacks and the
+      chips wrap inside the dialog.
 
 ## Decisions
 
@@ -153,6 +198,30 @@
 - Chopping resets the trim: chop rebuilds the pad source from the rendered — therefore
   trimmed — audio, so the window would otherwise cut a second time into a sample that
   already carries it.
+- A kit's section count is rounded up to a `P6_CHOP_VALUES` entry rather than left at the
+  number of samples: the device chops into 1, 2, 4, 8, 16 or 32, so a 3-section file has no
+  setting that lands on its boundaries. The spare sections are silence.
+- The kit refuses to build past the 512 KiB pad instead of letting the device truncate it,
+  unlike a plain oversize sample which is only warned about: a cut kit loses whole sections
+  and every boundary after the cut describes the wrong sample. The message gives the section
+  length that does fit.
+- The kit dialog reports its own errors on a line inside the dialog rather than through the
+  toast: the toast is a fixed-position element, so it renders *under* a modal dialog's top
+  layer and would never be seen.
+- The kit dialog's body is not a `<form method="dialog">` like the chop dialog's: it holds a
+  number input, and Enter inside a form would submit it — closing the dialog through the
+  first submit button instead of editing a value.
+- The destination pad is picked inside the dialog, in the current bank only, because
+  `store.editPad` addresses the current bank. Building selects that pad, so the result is
+  immediately previewable on the large waveform.
+- The kit keeps its sources after a cancel and drops them after a successful build: cancel
+  is usually "let me fix a parameter", a build is finished work.
+- The kit's ceilings are shown for all four sample rates at once, not just the selected one:
+  the question the number answers is "which rate should I take", and a single figure that
+  changes when you switch rates cannot be compared against anything. They are shown in ms,
+  the unit of the section input they constrain, while the figures below stay in seconds.
+- Mono versus stereo is not a fifth column: the row already updates when the layout changes,
+  and eight numbers would stop being readable at a glance.
 
 ## P-6 disk format
 
@@ -233,3 +302,8 @@ name from the WAV file name.
   by drag and drop.
 - Snapping the trim handles to zero crossings, and a fade in/out at the trim edges: a cut
   in the middle of a period clicks.
+- Same inside a kit: a sample cut at its section boundary clicks, and a fade at the section
+  edges would fix it.
+- Writing the kit's section count into a `PRM` as `CHOP`, so the pad arrives already chopped
+  instead of asking the user to set CHOP by hand on the device.
+

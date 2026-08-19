@@ -46,6 +46,16 @@ therefore shows up on the second reload**, not the first.
   **Reset trim** puts the whole sample back.
 - **Chop** cuts the sample into equal-length slices, either evenly or on detected
   transients, and replaces the sample with the result on the same pad.
+- **Build kit** goes the other way: several WAV files become one pad of equal-length
+  sections, so the device’s CHOP lands exactly on their boundaries. Drop the samples in,
+  order them, and the section count is rounded up to a chop value the P-6 offers
+  (1, 2, 4, 8, 16, 32), the spare sections staying silent. A sample shorter than a section
+  is padded with silence, a longer one is cut, and everything is resampled and folded to
+  the kit’s own rate and layout. **Max section** shows live, for the current section count
+  and mono/stereo layout, the longest section each sample rate can hold — the selected rate
+  is highlighted, and any rate too short for the current section length is flagged, so
+  picking a length and a rate is reading a row rather than trial and error. The kit lands on
+  the pad you choose, with its slice count already set.
 - **Banks → key** writes every loaded pad, one file after another, bank by bank.
 - The **?** next to **Banks → key** recalls what to do on the device itself.
 - **Save preset** saves the whole thing as a ZIP holding the complete `IMPORT` tree, so an

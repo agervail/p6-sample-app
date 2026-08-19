@@ -368,6 +368,104 @@ svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width:
 .dialog__row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .dialog__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
+.dialog--wide { width: min(760px, 92vw); }
+.dialog__note { margin: -4px 0 0; font-size: 13px; color: var(--ink-dim); }
+
+/* --- chop kit --- */
+
+.input {
+  background: var(--surface-raised);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  width: 78px;
+  text-align: right;
+  appearance: textfield;
+}
+.input::-webkit-outer-spin-button, .input::-webkit-inner-spin-button { appearance: none; }
+
+.kit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: var(--wave-bg);
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--radius-sm);
+}
+.kit.is-dropping { border-color: var(--action); border-style: solid; background: rgba(224, 165, 58, 0.05); }
+
+.kit__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 232px;
+  overflow-y: auto;
+}
+.kit__list:empty::after {
+  content: "Drop WAV files here, in the order you want the sections";
+  display: block;
+  padding: 10px 2px;
+  font-size: 13px;
+  color: var(--ink-faint);
+}
+
+.kit__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 8px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+}
+.kit__item--silent {
+  justify-content: center;
+  border-style: dashed;
+  background: none;
+  color: var(--ink-faint);
+  font-size: 12.5px;
+}
+
+.kit__index { width: 16px; color: var(--ink-faint); text-align: right; }
+.kit__wave { width: 108px; height: 34px; background: var(--wave-bg); border-radius: 3px; }
+.kit__name { flex: 1; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kit__length { color: var(--ink-faint); }
+
+.kit__controls { display: flex; flex-direction: column; gap: 10px; }
+.kit__controls .label { width: 88px; }
+.kit__controls .input + .unit { margin-right: auto; }
+
+.kit__limits { display: flex; flex-wrap: wrap; gap: 6px; }
+.kit__limit {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 3px 9px;
+  background: var(--surface-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+}
+.kit__limit-rate { font-size: 11px; color: var(--ink-faint); }
+.kit__limit-value { color: var(--ink-dim); }
+.kit__limit--current { border-color: var(--signal); background: var(--signal-veil); }
+.kit__limit--current .kit__limit-rate { color: var(--signal); }
+.kit__limit--current .kit__limit-value { color: var(--ink); }
+.kit__limit--short .kit__limit-value { color: var(--danger); }
+
+.kit__figures { display: flex; gap: 40px; }
+.kit__figures .figure__value { font-size: 18px; }
+.figure__value--over { color: var(--danger); }
+
+.kit__message { margin: 0; font-size: 12.5px; min-height: 34px; }
+.kit__message--hint { color: var(--ink-faint); }
+.kit__message--error { color: var(--danger); }
+
 @media (max-width: 900px) {
   .grid { grid-template-columns: repeat(2, 1fr); }
   .topbar { flex-wrap: wrap; gap: 16px; }
@@ -380,6 +478,10 @@ svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width:
   .topbar__group--end { margin-left: 0; }
   .storage__figures { gap: 28px; flex-wrap: wrap; }
   .actions { flex-wrap: wrap; }
+  .kit__wave { display: none; }
+  .kit__controls .label { width: auto; }
+  .kit__controls .row:has(.kit__limits) { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .kit__figures { gap: 22px; }
 }
 
 .boot-notice {

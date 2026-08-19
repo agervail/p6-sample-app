@@ -1,10 +1,11 @@
-import { BANK_IDS, IMPORT_FOLDER_NAME, PADS_PER_BANK } from '../constants.js';
+import { BANK_IDS, IMPORT_FOLDER_NAME, PADS_PER_BANK, WAV_EXTENSION } from '../constants.js';
+import { readChop } from './padSettings.js';
 import { bankPath, padPath } from './usb.js';
 import { unzipEntries, zipArchive } from './zip.js';
 
 const PRESET_NAME_PREFIX = 'p6-preset-';
 const PRESET_EXTENSION = '.zip';
-const PAD_ENTRY = /BANK_([A-H])\/PAD_([1-6])\/([^/]+\.WAV)$/i;
+const PAD_ENTRY = /BANK_([A-H])\/PAD_([1-6])\/([^/]+)(\.WAV|\.PRM)$/i;
 const MAC_JUNK = /(^|\/)(__MACOSX\/|\._)/;
 
 function twoDigits(value) {
@@ -39,17 +40,25 @@ export function buildPreset(pads, now) {
 }
 
 export async function readPreset(archive) {
-  const pads = [];
+  const samples = new Map();
+  const chops = new Map();
+
   for (const entry of await unzipEntries(archive)) {
     if (MAC_JUNK.test(entry.path)) continue;
     const match = entry.path.match(PAD_ENTRY);
     if (!match) continue;
-    const [, bankId, padNumber, fileName] = match;
-    pads.push({
-      bankId: bankId.toUpperCase(),
-      padIndex: Number(padNumber) - 1,
-      file: new File([entry.blob], fileName),
-    });
+    const [, bankId, padNumber, baseName, extension] = match;
+    const pad = `${bankId.toUpperCase()}/${padNumber}/${baseName.toUpperCase()}`;
+    if (extension.toUpperCase() === WAV_EXTENSION) {
+      samples.set(pad, {
+        bankId: bankId.toUpperCase(),
+        padIndex: Number(padNumber) - 1,
+        file: new File([entry.blob], `${baseName}${extension}`),
+      });
+    } else {
+      chops.set(pad, readChop(await entry.blob.text()));
+    }
   }
-  return pads;
+
+  return [...samples].map(([pad, sample]) => ({ ...sample, sliceCount: chops.get(pad) ?? 0 }));
 }

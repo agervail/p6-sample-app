@@ -339,10 +339,13 @@ async function collectLoadedPads() {
   return pads;
 }
 
-function chopNote(pads) {
-  const chopped = pads.filter((pad) => pad.settings !== null).length;
+function chopNote(chopped) {
   if (chopped === 0) return '';
   return `, ${chopped} with a ${PAD_SETTINGS_EXTENSION}`;
+}
+
+function settingsWritten(pads) {
+  return pads.filter((pad) => pad.settings !== null).length;
 }
 
 async function writeToDestination() {
@@ -358,7 +361,7 @@ async function writeToDestination() {
     await usb.writePads(folder, pads, (written, total, path) => {
       showToast(`${written}/${total} — ${path}`);
     });
-    showToast(`${pads.length} pads written to ${destinationText()}${chopNote(pads)}`, 'done');
+    showToast(`${pads.length} pads written to ${destinationText()}${chopNote(settingsWritten(pads))}`, 'done');
   } catch (error) {
     reportFailure(error);
   }
@@ -379,7 +382,7 @@ async function savePreset() {
     const writable = await handle.createWritable();
     await writable.write(await buildPreset(pads, new Date()));
     await writable.close();
-    showToast(`${pads.length} pads saved to ${handle.name}${chopNote(pads)}`, 'done');
+    showToast(`${pads.length} pads saved to ${handle.name}${chopNote(settingsWritten(pads))}`, 'done');
   } catch (error) {
     reportFailure(error);
   }
@@ -396,11 +399,13 @@ async function loadPreset() {
     }
     const loadedPadsByBank = Object.fromEntries(BANK_IDS.map((bankId) => [bankId, []]));
     for (const pad of pads) {
-      loadedPadsByBank[pad.bankId].push([pad.padIndex, await decodeWavFile(pad.file)]);
+      const decoded = await decodeWavFile(pad.file);
+      loadedPadsByBank[pad.bankId].push([pad.padIndex, { ...decoded, sliceCount: pad.sliceCount }]);
     }
     stop();
     store.replaceAllBanks(loadedPadsByBank);
-    showToast(`${pads.length} pads loaded from ${handle.name}`, 'done');
+    const chopped = pads.filter((pad) => pad.sliceCount > 0).length;
+    showToast(`${pads.length} pads loaded from ${handle.name}${chopNote(chopped)}`, 'done');
   } catch (error) {
     reportFailure(error);
   }

@@ -62,7 +62,9 @@ therefore shows up on the second reload**, not the first.
   files included, so an earlier preset goes back on the key by unzipping it there.
 - **Load preset** reads such a ZIP back into the 8 banks. It takes the archive this app
   writes as well as one zipped from a key by the Finder — pads are placed by their
-  `BANK_x/PAD_n` path, whatever wraps it.
+  `BANK_x/PAD_n` path, whatever wraps it. A pad whose folder holds a `PRM` under the same
+  base name comes back with its slice count, so a chopped pad keeps its markers; a `PRM`
+  left over from a different sample is ignored rather than believed.
 - ⌘Z / ⇧⌘Z undo and redo pad changes.
 
 ## Writing conventions

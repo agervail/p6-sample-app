@@ -161,7 +161,27 @@
       into 1, 2, 4, 8, 16, 32, so no .PRM is written` in the Memory panel, and re-chopping
       into 4 clears it. Clicking **Banks → key** and **Save preset** through to a real disk
       still needs a human for the picker, and whether the device accepts a hand-written `PRM`
-      still needs the hardware.
+      still needs the hardware. Commit `df85eb6`, pushed to `origin/main`.
+
+- [x] 2026-08-19 — **A preset brings its chop back**, at Antoine's request, closing the gap the
+      `PRM` writer opened: the archive carried the chop but `readPreset` matched `.WAV` entries
+      only, so a chopped pad came back without its markers. `readPreset` now matches both
+      extensions in one pass and pairs each sample with the `PRM` beside it by **folder plus
+      base name**, so a `PRM` left over from another sample — `P6_A-1.PRM` next to `Kick.WAV` —
+      is ignored rather than believed. `padSettings.readChop` parses it back, guarded by the
+      same two predicates the writer uses, so we read exactly what we would write: `CHOP = 1`
+      and a count the device cannot express both come back as no chop. The count travels
+      `readPreset` → `decodeWavFile` → `replaceAllBanks`, which now keeps `sliceCount`.
+      Verified: 20 headless assertions — a three-pad round trip keeps 8 and 4 sections while
+      the unchopped pad stays at 0, the `PRM` listed *before* its `WAV` pairs just as well, an
+      archive zipped from the key root with `__MACOSX` junk pairs through its prefix, a stale
+      `PRM` under another base name is ignored, `CHOP` 1 / 3 / 64 all read as no chop, a
+      `PRM16` line does not get mistaken for `CHOP`, and a preset written before the `PRM`
+      existed still loads. In the page, driving the app's own store through the real modules,
+      an archive holding `kit4_kick.WAV` + `.PRM` on A-2 and a plain sample on A-4 restores
+      `sliceCount` 4 and 0, and the large waveform draws its three markers at columns 248, 496
+      and 744 of 992 — the exact quarters. **Load preset** through its picker still needs a
+      human.
 
 ## Decisions
 
@@ -272,6 +292,16 @@
 - `SIZE` need not divide by `CHOP`: factory pad A-5 is `CHOP = 32` over 255036 frames, and
   H-1 is `CHOP = 16` over 124518. The device handles the remainder itself, so our even chop
   and its floor division are well within what the format tolerates.
+- Reading a preset pairs a `PRM` with its `WAV` by folder *and* base name, not by folder
+  alone. One pad folder holds one sample, so the folder would be enough — but a `PRM` left
+  beside a different sample is exactly the stale-file case the writer already guards against,
+  and a wrong `CHOP` is worse than none.
+- `readChop` refuses `CHOP = 1` and any count outside `P6_CHOP_VALUES`, which is the same pair
+  of conditions the writer checks before emitting a `PRM` at all. The round trip is therefore
+  symmetric by construction: we read back exactly what we would write.
+- The rest of the `PRM` is still ignored on load. `LEVEL`, the envelopes and the filter have no
+  representation in the app, and inventing pad state the interface cannot show or edit would
+  be worse than dropping it. A preset stays an `IMPORT`-tree snapshot, not a project format.
 
 ## P-6 disk format
 
@@ -366,8 +396,6 @@ name from the WAV file name.
 
 - Extend the `PRM` beyond the chop — loop, reverse, level, tuning, filter — once the app has
   controls for them and the device has confirmed it reads a hand-written one.
-- Read `CHOP` back when loading a preset: the archive now carries it, but `readPreset` still
-  matches `.WAV` entries only, so a chopped pad comes back without its slice markers.
 - Processing presets, duplicate hashing, manual slicing on the waveform, reordering pads
   by drag and drop.
 - Snapping the trim handles to zero crossings, and a fade in/out at the trim edges: a cut

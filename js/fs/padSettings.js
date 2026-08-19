@@ -4,6 +4,8 @@ const ASSIGNMENT = '\t= ';
 const LINE_END = '\n';
 const NO_CHOP = P6_CHOP_VALUES[0];
 
+const CHOP_LINE = new RegExp(`^CHOP${ASSIGNMENT}(\\d+)$`, 'm');
+
 const PAD_FIELDS = new Map([
   ['PHRASE', null],
   ['GATE', 0],
@@ -75,6 +77,14 @@ export function isChopped(sliceCount) {
 
 export function isChopValue(sliceCount) {
   return P6_CHOP_VALUES.includes(sliceCount);
+}
+
+export function readChop(text) {
+  const match = text.match(CHOP_LINE);
+  if (!match) return null;
+  const chop = Number(match[1]);
+  if (!isChopped(chop) || !isChopValue(chop)) return null;
+  return chop;
 }
 
 function phraseIndex(bankId, padIndex) {

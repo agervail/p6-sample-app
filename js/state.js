@@ -123,6 +123,7 @@ export function replaceAllBanks(loadedPadsByBank) {
           peaks: sample.peaks,
           sampleRate: sample.source.sampleRate,
           mono: sample.source.channels.length === 1,
+          sliceCount: sample.sliceCount ?? 0,
         });
       }
     }

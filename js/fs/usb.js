@@ -35,8 +35,12 @@ export function importFolder(destination) {
   return destination.getDirectoryHandle(IMPORT_FOLDER_NAME, CREATE);
 }
 
+export function bankPath(bankId) {
+  return `${BANK_FOLDER_PREFIX}${bankId}`;
+}
+
 export function padPath(bankId, padIndex) {
-  return `${BANK_FOLDER_PREFIX}${bankId}/${PAD_FOLDER_PREFIX}${padIndex + 1}`;
+  return `${bankPath(bankId)}/${PAD_FOLDER_PREFIX}${padIndex + 1}`;
 }
 
 export function sanitizeFileName(name) {
@@ -113,15 +117,6 @@ export async function writePads(importFolder, pads, onProgress) {
     await writable.close();
     onProgress(index + 1, pads.length, padPath(pad.bankId, pad.padIndex));
   }
-}
-
-export async function readPads(importFolder) {
-  const pads = [];
-  for (const { bankId, padIndex, folder } of await existingPadFolders(importFolder)) {
-    const [name] = await fileNames(folder, isSample);
-    if (name) pads.push({ bankId, padIndex, handle: await folder.getFileHandle(name) });
-  }
-  return pads;
 }
 
 export async function listPadFiles(importFolder) {

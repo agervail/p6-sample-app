@@ -5,6 +5,7 @@ import { decodeWavFile } from './audio/decode.js';
 import { padMetrics, renderPad } from './audio/process.js';
 import { play, playingPadIndex, progress, stop } from './audio/player.js';
 import { encodeWav } from './audio/wav.js';
+import { buildPreset, presetFileName, readPreset } from './fs/preset.js';
 import * as store from './state.js';
 import * as usb from './fs/usb.js';
 import { loadDestinationHandle, saveDestinationHandle } from './fs/handleStore.js';
@@ -17,9 +18,14 @@ const WAV_PICKER_OPTIONS = {
   multiple: false,
   types: [{ description: 'WAV sample', accept: { 'audio/wav': ['.wav'] } }],
 };
+const PRESET_PICKER_OPTIONS = {
+  types: [{ description: 'P-6 preset', accept: { 'application/zip': ['.zip'] } }],
+};
 
 const grid = document.getElementById('pad-grid');
-const bankSelect = document.getElementById('bank-select');
+const bankIdNode = document.getElementById('bank-id');
+const previousBankButton = document.getElementById('bank-previous');
+const nextBankButton = document.getElementById('bank-next');
 const bankMonoInput = document.getElementById('bank-mono');
 const destinationLabel = document.getElementById('destination-path');
 const destinationButton = document.getElementById('choose-destination');
@@ -57,7 +63,7 @@ function reportFailure(error) {
 }
 
 function destinationText() {
-  if (!destination) return 'no USB key selected';
+  if (!destination) return 'no P6 selected';
   return `${destination.name}/${IMPORT_FOLDER_NAME}`;
 }
 
@@ -117,7 +123,7 @@ function renderDetail(playhead) {
 function render(state) {
   const bank = store.currentBank();
   const playhead = progress();
-  bankSelect.value = state.currentBankId;
+  bankIdNode.textContent = state.currentBankId;
   bankMonoInput.checked = bank.forceMono;
   undoButton.disabled = !store.canUndo();
   redoButton.disabled = !store.canRedo();
@@ -257,6 +263,11 @@ async function chooseDestination() {
   }
 }
 
+function hasLoadedPad() {
+  const { banks } = store.getState();
+  return BANK_IDS.some((bankId) => banks[bankId].pads.some(store.isPadLoaded));
+}
+
 async function collectLoadedPads() {
   const pads = [];
   for (const bankId of BANK_IDS) {
@@ -294,21 +305,43 @@ async function writeToDestination() {
   }
 }
 
-async function readFromDestination() {
-  const folder = await ensureDestination();
-  if (!folder) return;
+async function savePreset() {
+  if (!hasLoadedPad()) {
+    showToast('No sample loaded', 'error');
+    return;
+  }
   try {
-    const pads = await usb.readPads(folder);
+    const handle = await window.showSaveFilePicker({
+      suggestedName: presetFileName(new Date()),
+      ...PRESET_PICKER_OPTIONS,
+    });
+    showToast('Building the preset…');
+    const pads = await collectLoadedPads();
+    const writable = await handle.createWritable();
+    await writable.write(await buildPreset(pads, new Date()));
+    await writable.close();
+    showToast(`${pads.length} pads saved to ${handle.name}`, 'done');
+  } catch (error) {
+    reportFailure(error);
+  }
+}
+
+async function loadPreset() {
+  try {
+    const [handle] = await window.showOpenFilePicker({ multiple: false, ...PRESET_PICKER_OPTIONS });
+    showToast('Reading the preset…');
+    const pads = await readPreset(await handle.getFile());
     if (pads.length === 0) {
-      showToast(`No sample in ${destinationText()}`, 'error');
+      showToast('No sample in this preset', 'error');
       return;
     }
     const loadedPadsByBank = Object.fromEntries(BANK_IDS.map((bankId) => [bankId, []]));
     for (const pad of pads) {
-      loadedPadsByBank[pad.bankId].push([pad.padIndex, await decodeWavFile(await pad.handle.getFile())]);
+      loadedPadsByBank[pad.bankId].push([pad.padIndex, await decodeWavFile(pad.file)]);
     }
+    stop();
     store.replaceAllBanks(loadedPadsByBank);
-    showToast(`${pads.length} pads read back from ${destinationText()}`, 'done');
+    showToast(`${pads.length} pads loaded from ${handle.name}`, 'done');
   } catch (error) {
     reportFailure(error);
   }
@@ -352,7 +385,6 @@ function buildPads() {
 }
 
 function buildSelectors() {
-  bankSelect.replaceChildren(...BANK_IDS.map((bankId) => new Option(bankId, bankId)));
   chopCount.replaceChildren(...CHOP_SLICE_COUNTS.map((count) => new Option(String(count), String(count))));
   chopCount.value = String(CHOP_SLICE_COUNTS[2]);
 }
@@ -365,17 +397,22 @@ async function restoreDestination() {
   renderDestination();
 }
 
+function stepBank(offset) {
+  const current = BANK_IDS.indexOf(store.getState().currentBankId);
+  stop();
+  store.selectBank(BANK_IDS[(current + offset + BANK_IDS.length) % BANK_IDS.length]);
+}
+
 function bindGlobalControls() {
-  bankSelect.addEventListener('change', () => {
-    stop();
-    store.selectBank(bankSelect.value);
-  });
+  previousBankButton.addEventListener('click', () => stepBank(-1));
+  nextBankButton.addEventListener('click', () => stepBank(1));
   bankMonoInput.addEventListener('change', () => store.setForceMono(bankMonoInput.checked));
   destinationButton.addEventListener('click', () => (destinationNeedsPermission ? ensureDestination() : chooseDestination()));
   undoButton.addEventListener('click', store.undo);
   redoButton.addEventListener('click', store.redo);
   document.getElementById('write-usb').addEventListener('click', writeToDestination);
-  document.getElementById('read-usb').addEventListener('click', readFromDestination);
+  document.getElementById('save-preset').addEventListener('click', savePreset);
+  document.getElementById('load-preset').addEventListener('click', loadPreset);
   document.getElementById('clear-bank').addEventListener('click', () => {
     stop();
     store.clearCurrentBank();

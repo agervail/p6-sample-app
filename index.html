@@ -27,13 +27,21 @@
   <header class="topbar">
     <div class="topbar__group">
       <span class="label">Bank</span>
-      <select class="select select--bank" id="bank-select" aria-label="Current bank"></select>
+      <div class="bank-nav">
+        <button type="button" class="btn btn--icon" id="bank-previous" aria-label="Previous bank">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12 4 6 10l6 6"/></svg>
+        </button>
+        <strong class="bank-nav__id mono" id="bank-id">A</strong>
+        <button type="button" class="btn btn--icon" id="bank-next" aria-label="Next bank">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m8 4 6 6-6 6"/></svg>
+        </button>
+      </div>
       <label class="check"><input type="checkbox" id="bank-mono"><span>Force mono</span></label>
     </div>
 
     <div class="topbar__group topbar__group--path">
       <span class="label">Destination</span>
-      <span class="path" id="destination-path">no USB key selected</span>
+      <span class="path" id="destination-path">no P6 selected</span>
       <button type="button" class="btn btn--quiet" id="choose-destination">Choose…</button>
     </div>
 
@@ -83,13 +91,13 @@
         <ol class="hint__steps">
           <li>Connect your computer to the P-6’s USB port with a USB cable.</li>
           <li>Hold down the [SAMPLING] button while turning on the power.</li>
-          <li>Open the “P-6” drive on your computer.</li>
-          <li>Copy the sample files you want to import into the pad folders (PAD_1–PAD_6)
-            in the “IMPORT” folder of the “P-6” drive.</li>
+          <li>Once copying is finished, eject the “P-6” drive from your computer.</li>
+          <li>Press the [KYBD] button.</li>
         </ol>
       </span>
     </span>
-    <button type="button" class="btn" id="read-usb">Key → banks</button>
+    <button type="button" class="btn" id="save-preset">Save preset</button>
+    <button type="button" class="btn" id="load-preset">Load preset</button>
     <button type="button" class="btn btn--danger" id="clear-bank">Clear bank</button>
     <button type="button" class="btn btn--danger" id="wipe-import">Erase IMPORT folder</button>
     <span class="wordmark">P-6</span>

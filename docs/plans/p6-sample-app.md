@@ -38,12 +38,44 @@
       directory tree — nested write, replacement of a pre-existing `P6_A-1.WAV`+`.PRM`,
       read-back landing on the right bank and pad, erase leaving the skeleton — and in the
       browser: 8 banks in the selector, no console error. Writing to a real key is still
-      untested, the directory picker needs a human.
+      untested, the directory picker needs a human. Commit `7bcd6e9`, pushed to
+      `origin/main`.
 
 - [x] 2026-08-19 — Import steps from the owner's manual translated into English, behind a
       **?** next to **Banks → key** (hover, and keyboard focus via `:focus-within`).
       Verified in the browser: the bubble becomes visible on focus, sits above the footer,
-      340 px wide, `surface-raised` on `rule-strong`.
+      340 px wide, `surface-raised` on `rule-strong`. Commit `7bcd6e9`, pushed to
+      `origin/main`.
+
+- [x] 2026-08-19 — Bank navigation moved from a dropdown to `‹ A ›` arrows, at Antoine's
+      request: 8 banks make a select a list to hunt through, two arrows make it one click.
+      They wrap around, so H → A and A → H. Verified in the browser: forward through the
+      eight letters and back, wrap in both directions, no console error.
+
+- [x] 2026-08-19 — **Key → banks** replaced by **Save preset**: a ZIP of the complete
+      `IMPORT` tree (`js/fs/zip.js` writes the archive by hand, stored entries, no
+      dependency; `js/fs/preset.js` lays out the tree and names the file
+      `p6-preset-<date>_<time>.zip`). Restoring an earlier preset is unzipping it onto the
+      key. Read-back is gone with the button, so `usb.readPads` and `state.replaceAllBanks`
+      were deleted rather than left dead. Also: the empty destination now reads
+      `no P6 selected`, and the help bubble's steps 3 and 4 became "eject the drive" and
+      "press [KYBD]" — the app does the copying, so the manual's "open the drive / copy the
+      files" steps were noise. Verified: a generated archive passes `unzip -t`, lists the 56
+      folders and the samples with the right sizes and extracts to the right tree; in the
+      browser, the footer shows **Save preset**, an empty set toasts `No sample loaded`, no
+      console error.
+
+- [x] 2026-08-19 — **Load preset**, the other direction, at Antoine's request: `zip.js`
+      gained a reader (central directory walk, stored and deflated entries via
+      `DecompressionStream`), `preset.js` a `readPreset` that places pads by their
+      `BANK_x/PAD_n` path — whatever precedes it — and skips `__MACOSX` junk, so a ZIP made
+      by the Finder from a key loads as well as ours. `state.replaceAllBanks`, deleted an
+      hour earlier with the old read-back, is back and is exactly the right function for it.
+      Verified: round trip of our own archive; a deflated archive from the `zip` CLI with
+      `__MACOSX` entries loads the two real samples and ignores the junk; a non-ZIP reports
+      "This file is not a ZIP archive"; and in the page itself, encode → save → load →
+      decode → banks puts a 440 Hz tone on A-1 and C-5 with the waveform and the sizes
+      right.
 
 ## Decisions
 
@@ -59,6 +91,16 @@
   describe something that is no longer there.
 - **Erase IMPORT folder** removes files, never folders: the `BANK_x/PAD_n` tree is created
   by the device.
+- A preset is a ZIP of the `IMPORT` tree rather than a project format of our own: the P-6
+  restores it with no tool but the Finder, and it stays readable in ten years.
+- Loading matches pads on the `BANK_x/PAD_n` path only, ignoring any prefix: an archive
+  zipped from the key root, from the `IMPORT` folder, or written by us all load the same.
+- The preset ZIP carries the 48 empty pad folders too, so unzipping it yields a whole
+  `IMPORT` folder instead of a partial one.
+- ZIP written by hand (`js/fs/zip.js`, stored entries, CRC-32 table) to keep the
+  no-dependency rule. WAV audio does not compress meaningfully anyway.
+- The file picker is opened *before* the archive is built: the awaits of rendering and
+  zipping would consume the user activation `showSaveFilePicker` requires.
 - Processing chosen: what the P-6 itself offers (sample rate, mono, pitch in cents, chop).
   Normalization, silence trimming and fades from the initial brief are out of V1.
 - Dark visual direction taken from the screenshot, but re-typeset: a single signal color,

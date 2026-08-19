@@ -1,0 +1,16 @@
+{
+  "name": "P-6 Sample Manager",
+  "short_name": "P-6",
+  "description": "Gestionnaire d'échantillons pour clé USB : banques de pads, traitement WAV et écriture dans le dossier IMPORT.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0F131A",
+  "theme_color": "#0F131A",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

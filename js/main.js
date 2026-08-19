@@ -14,6 +14,7 @@ import { drawWaveform, positionFromPointer } from './ui/waveform.js';
 const TOAST_DURATION_MS = 4000;
 const SIGNAL_COLOR = '#5AA9E6';
 const DIMMED_COLOR = '#3A4756';
+const OFFLINE_EXTRA_ASSETS = ['manifest.json', 'icons/icon-192.png', 'icons/icon-512.png'];
 const WAV_PICKER_OPTIONS = {
   multiple: false,
   types: [{ description: 'Échantillon WAV', accept: { 'audio/wav': ['.wav'] } }],
@@ -404,6 +405,27 @@ function bindGlobalControls() {
   });
 }
 
+async function primeOfflineCache() {
+  const worker = (await navigator.serviceWorker.ready).active;
+  if (!worker) return;
+  const loaded = performance.getEntriesByType('resource').map((entry) => entry.name);
+  const extras = OFFLINE_EXTRA_ASSETS.map((asset) => new URL(asset, window.location.href).href);
+  worker.postMessage({ type: 'cache-urls', urls: [window.location.href, ...loaded, ...extras] });
+}
+
+function whenFullyLoaded(callback) {
+  if (document.readyState === 'complete') callback();
+  else window.addEventListener('load', callback, { once: true });
+}
+
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator) || window.location.protocol === 'file:') return;
+  navigator.serviceWorker.register('sw.js').then(
+    () => whenFullyLoaded(() => primeOfflineCache().catch(reportFailure)),
+    () => showToast('Mode hors-ligne indisponible : le service worker n’a pas pu être enregistré', 'error'),
+  );
+}
+
 function start() {
   document.documentElement.dataset.booted = 'true';
   if (!usb.isSupported()) {
@@ -414,6 +436,7 @@ function start() {
   bindGlobalControls();
   store.subscribe(render);
   renderDestination();
+  registerServiceWorker();
   restoreDestination().catch(reportFailure);
 }
 

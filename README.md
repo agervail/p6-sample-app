@@ -17,7 +17,23 @@ Puis ouvrir <http://localhost:8080> dans **Chrome, Edge ou Brave**.
 
 La File System Access API n'existe que sur Chromium et exige une origine sûre : en
 `file://` le sélecteur de dossier est bloqué et IndexedDB inutilisable. La page ne
-fonctionne pas non plus dans une iframe cross-origin.
+fonctionne pas non plus dans une iframe cross-origin. Ouverte en `file://`, elle
+affiche un encart qui rappelle la commande au lieu d'une page vide.
+
+## Installer comme application
+
+La page est une PWA : servie depuis `localhost` ou `https://`, Chrome propose de
+l'installer (icône dans la barre d'adresse, ou `⋮ → Diffuser, enregistrer et partager
+→ Installer`). Elle atterrit alors dans `~/Applications/Chrome Apps` et s'ouvre dans sa
+propre fenêtre.
+
+Le service worker met en cache tout ce que la page charge — modules, styles, polices
+Google — et la sert ensuite depuis ce cache : une fois visitée, l'app démarre serveur
+éteint et réseau coupé.
+
+La stratégie est *stale-while-revalidate* : le cache répond immédiatement, la version
+fraîche est récupérée en arrière-plan et prise en compte au chargement suivant. **Une
+modification du code apparaît donc au deuxième rechargement**, pas au premier.
 
 ## Utilisation
 
@@ -60,3 +76,6 @@ liste des fréquences proposées sont dans le même fichier.
 - Les chunks WAV non audio (LIST/INFO, cue points) sont perdus à l'export.
 - Seul le dossier de destination est mémorisé entre deux sessions (IndexedDB) ; les
   échantillons chargés ne le sont pas.
+- Le handle de la clé est lié à l'origine : passer de `localhost` à un domaine `https://`
+  demande une nouvelle autorisation.
+- Les icônes sont générées par `tools/make-icons.py` (Python seul, sans dépendance).

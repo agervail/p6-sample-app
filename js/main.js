@@ -137,7 +137,7 @@ function renderDetail(playhead) {
     peaks: pad.peaks,
     color: waveColor(isLoaded),
     trim: trimWindow(pad),
-    overflowStart: metrics?.isTruncated ? metrics.maxSeconds / metrics.seconds : null,
+    overflowStart: metrics?.isTruncated ? metrics.playedSpan : null,
     playhead: playingPadIndex() === store.getState().selectedPadIndex ? playhead : null,
     sliceCount: pad.sliceCount,
     trimGrips: isLoaded,
@@ -210,7 +210,8 @@ async function togglePlayback(padIndex, sourceRatio) {
     refresh();
     return;
   }
-  const offsetRatio = sourceRatio === null ? 0 : offsetWithinTrim(sourceRatio, trimWindow(pad));
+  const { playedSpan } = padMetrics(pad, bank.forceMono);
+  const offsetRatio = sourceRatio === null ? 0 : offsetWithinTrim(sourceRatio, trimWindow(pad), playedSpan);
   try {
     const rendered = await renderPad(pad, bank.forceMono);
     await play(padIndex, rendered.channels, rendered.sampleRate, offsetRatio, refresh);

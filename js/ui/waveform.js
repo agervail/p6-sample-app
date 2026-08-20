@@ -133,7 +133,8 @@ export function drawWaveform(canvas, {
   drawTrim(context, trim, width, height, trimGrips);
 
   if (playhead !== null) {
-    drawVerticalLine(context, withinWindow(trim, playhead) * width, height, PLAYHEAD_STROKE, 1.5);
+    const playedRatio = playhead * (overflowStart ?? 1);
+    drawVerticalLine(context, withinWindow(trim, playedRatio) * width, height, PLAYHEAD_STROKE, 1.5);
   }
 }
 

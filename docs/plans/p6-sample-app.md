@@ -379,6 +379,32 @@
       with it, so nothing documents a button that no longer exists; the mentions inside past
       entries stay as they are, being a record of what was verified at the time.
 
+- [x] 2026-08-20 — **The playhead stays inside the non-hatched part** of a sample too long
+      for the pad. `progress()` is a ratio of the *rendered* buffer, which `renderPad`
+      truncates to `keptFrames`, but `drawWaveform` mapped it across the whole trim window —
+      so on a 12 s sample with 5.94 s of room the line crossed the full width in the 5.94 s
+      the audio lasted, running at twice the speed of the waveform under it.
+      Fixing the display alone would have broken click-to-seek, which was *consistent with
+      the bug*: a canvas click became a ratio of the drawn window and was then applied to the
+      truncated buffer, so the compression cancelled out. Fix the playhead and a click at the
+      hatch boundary would have started the line back at a quarter width. Both directions now
+      share one number, `padMetrics().playedSpan` (`keptFrames / frames`, so 1 when nothing is
+      cut): `drawWaveform` multiplies the playhead by it, `offsetWithinTrim` divides the click
+      by it and clamps, so a click inside the hatching seeks to the end of what plays. It also
+      replaces the `maxSeconds / seconds` expression that both drawing call sites were
+      computing for `overflowStart` — the same ratio under another name, since the hatch
+      starts exactly where playback stops.
+      Verified by reading the drawn pixels back off a canvas: on an untruncated pad a playhead
+      of 1 lands at 999/1000 px and 0.5 at 499, unchanged; truncated at 0.495 it lands on the
+      hatch boundary (494) instead of the far right, and 0.5 at 246; with a 0.2–0.8 trim on
+      top it still composes (499). Click round-trip on a real 12 s pad: clicking at 0.25 or at
+      the boundary redraws the playhead exactly where the pointer was, and clicking inside the
+      hatching clamps to the boundary.
+      One trap worth naming: a stale `process.js` in the service worker cache while the new
+      `pad.js` ran made `metrics.playedSpan` `undefined`, which `drawWaveform` treats as the
+      `null` default — the overflow hatching silently vanished. It was the mixed module
+      versions, not the change; a genuinely clean reload restored it.
+
 ## Decisions
 
 - Model: 8 banks × 6 pads, one WAV per pad, matching the device. It started at 4 banks from

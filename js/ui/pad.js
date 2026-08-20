@@ -78,7 +78,7 @@ export function createPadView(padIndex, handlers) {
       peaks: pad.peaks,
       color: waveColor(isLoaded),
       trim: trimWindow(pad),
-      overflowStart: metrics?.isTruncated ? metrics.maxSeconds / metrics.seconds : null,
+      overflowStart: metrics?.isTruncated ? metrics.playedSpan : null,
       playhead: isPlaying ? playhead : null,
       sliceCount: pad.sliceCount,
     });

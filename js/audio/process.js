@@ -29,9 +29,9 @@ export function trimWindow(pad) {
   return { start: pad.trimStart, end: pad.trimEnd };
 }
 
-export function offsetWithinTrim(sourceRatio, trim) {
-  const span = trim.end - trim.start;
-  return Math.min(1, Math.max(0, (sourceRatio - trim.start) / span));
+export function offsetWithinTrim(sourceRatio, trim, playedSpan) {
+  const withinTrim = (sourceRatio - trim.start) / (trim.end - trim.start);
+  return Math.min(1, Math.max(0, withinTrim) / playedSpan);
 }
 
 function trimBounds(pad) {
@@ -62,6 +62,7 @@ export function padMetrics(pad, forceMono) {
     maxSeconds: maxFrames / pad.sampleRate,
     frames,
     keptFrames,
+    playedSpan: keptFrames / frames,
     isTruncated: frames > maxFrames,
     bytes: keptFrames * bytesPerFrame,
   };

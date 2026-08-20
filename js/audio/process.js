@@ -1,12 +1,4 @@
-import {
-  BYTES_PER_FRAME_PER_CHANNEL,
-  CENTS_PER_OCTAVE,
-  MAX_PAD_BYTES,
-} from '../constants.js';
-
-export function pitchRatio(cents) {
-  return 2 ** (cents / CENTS_PER_OCTAVE);
-}
+import { BYTES_PER_FRAME_PER_CHANNEL, MAX_PAD_BYTES } from '../constants.js';
 
 export function foldToMono(channels) {
   if (channels.length === 1) return channels;
@@ -60,7 +52,7 @@ export function outputChannelCount(pad, forceMono) {
 export function padMetrics(pad, forceMono) {
   const channelCount = outputChannelCount(pad, forceMono);
   const bytesPerFrame = channelCount * BYTES_PER_FRAME_PER_CHANNEL;
-  const seconds = trimBounds(pad).frames / pad.source.sampleRate / pitchRatio(pad.pitchCents);
+  const seconds = trimBounds(pad).frames / pad.source.sampleRate;
   const frames = Math.max(1, Math.round(seconds * pad.sampleRate));
   const maxFrames = Math.floor(MAX_PAD_BYTES / bytesPerFrame);
   const keptFrames = Math.min(frames, maxFrames);
@@ -84,7 +76,6 @@ export async function renderPad(pad, forceMono) {
   const metrics = padMetrics(pad, forceMono);
   const trimmed = trimmedChannels(pad);
   const folded = metrics.channelCount === 1 ? foldToMono(trimmed) : trimmed;
-  const renderRate = Math.round(pad.sampleRate / pitchRatio(pad.pitchCents));
-  const resampled = await resampleChannels(folded, pad.source.sampleRate, renderRate);
+  const resampled = await resampleChannels(folded, pad.source.sampleRate, pad.sampleRate);
   return { channels: truncate(resampled, metrics.keptFrames), sampleRate: pad.sampleRate };
 }

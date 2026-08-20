@@ -181,7 +181,47 @@
       an archive holding `kit4_kick.WAV` + `.PRM` on A-2 and a plain sample on A-4 restores
       `sliceCount` 4 and 0, and the large waveform draws its three markers at columns 248, 496
       and 744 of 992 — the exact quarters. **Load preset** through its picker still needs a
-      human.
+      human. Commit `fa364b1`, pushed to `origin/main`.
+
+- [x] 2026-08-20 — **Per-pad pitch and Erase IMPORT folder removed**, at Antoine's request
+      ("un peu de ménage"). Pitch went with `pitchRatio`, `CENTS_PER_OCTAVE`,
+      `PITCH_STEP_CENTS`, `PITCH_LIMIT_CENTS`, the pad's `pitchCents` field, the stepper row
+      in the pad template and the `.stepper` CSS: `padMetrics` now takes the length straight
+      from the trim, and `renderPad` resamples to `pad.sampleRate` instead of a pitch-shifted
+      render rate. Erase went with its footer button, `wipeImportFolder`, and the `usb.js`
+      pieces only it used — `listPadFiles`, `removeFiles`, `existingPadFolders`,
+      `existingDirectory`; `dropPreviousSample` still clears a pad folder before writing, so
+      overwriting a key is unaffected. Verified in the browser (twice-reloaded past the
+      service worker): the grid builds its 6 pads, no `[data-pitch]` node and no
+      `#wipe-import` survive, the footer reads Banks → key / Build kit / Save preset / Load
+      preset / Clear bank, and the console is clean.
+
+- [x] 2026-08-20 — **Visual direction switched to Antoine's mockup**: a monospace terminal
+      look, yellow `#F0E31C` as the single signal color, near-black surfaces, 2px corners, no
+      shadows outside dialogs and the toast. JetBrains Mono is now the only face (Inter
+      dropped from the Google Fonts request), so the `mono` class disappeared from the markup
+      along with its rule. Selects became underlined rather than boxed, checkboxes are custom
+      squares, and the topbar rule plus the Memory panel rule are the yellow lines that
+      structure the page. Yellow marks the *useful* action rather than a fixed button rank: an
+      empty pad's **Load**, and the selected pad's play and **Chop**. `btn--accent` and
+      `btn--primary` collapsed into `btn--primary` alone, so **Build kit** and **Chop** in the
+      grid are plain buttons and only **Banks → key** and the dialog confirmations carry the
+      accent. Structural additions the mockup called for: an `ACTIVE` tag on the selected pad,
+      a `drop .wav` overlay on an empty pad's waveform (hence the `pad__stage` wrapper), and
+      an 8-segment strip beside the Memory figures marking which banks hold audio
+      (`buildBankStrip` / `renderStorage`, which now computes the per-bank bytes once instead
+      of twice). Dropped: the `P-6` footer wordmark and the visible `Memory` heading, neither
+      of which the mockup has — the heading stayed as a visually-hidden `h2` so the document
+      outline survives. An empty pad hides its rate row and its play/clear/chop buttons with
+      `visibility: hidden`, not `display: none`, so a loaded and an empty pad keep the same
+      height. Verified in the browser at 1220, 760 and 420 px, with three samples pushed
+      through the real modules: the selected pad's yellow bar and accents, the strip filling
+      for bank A, the chop and kit dialogs, the green stop state during playback, the custom
+      checkbox when Force mono is on, and no horizontal overflow at 420 px — which needed the
+      **?** bubble pinned to the viewport below 560 px, a pre-existing overflow the fixed
+      360 px width had always caused. Two corrections from Antoine's review: **Clear bank**
+      keeps the red outline every other destructive control carries — the footer override that
+      erased it is gone — and the frame no longer sits flush against the top of the viewport.
 
 ## Decisions
 
@@ -195,8 +235,6 @@
 - Writing a pad deletes the `WAV` and the `PRM` already in its folder. The `PRM` carries the
   frame count of the sample it shipped with, so leaving it beside a different sample would
   describe something that is no longer there.
-- **Erase IMPORT folder** removes files, never folders: the `BANK_x/PAD_n` tree is created
-  by the device.
 - A preset is a ZIP of the `IMPORT` tree rather than a project format of our own: the P-6
   restores it with no tool but the Finder, and it stays readable in ten years.
 - Loading matches pads on the `BANK_x/PAD_n` path only, ignoring any prefix: an archive
@@ -207,14 +245,20 @@
   no-dependency rule. WAV audio does not compress meaningfully anyway.
 - The file picker is opened *before* the archive is built: the awaits of rendering and
   zipping would consume the user activation `showSaveFilePicker` requires.
-- Processing chosen: what the P-6 itself offers (sample rate, mono, pitch in cents, chop).
-  Normalization, silence trimming and fades from the initial brief are out of V1.
-- Dark visual direction taken from the screenshot, but re-typeset: a single signal color,
-  amber reserved for the write action, red for destructive actions.
-- Revamp 2026-08-19: a "classic" dark theme rather than the Roland mockup. Neutral grays,
-  blue #4D8DFD as the only signal color (the write button included — it is no longer
-  amber), amber kept for chop and warnings, red for destructive actions. One interface
-  family (Inter) plus JetBrains Mono for figures.
+- Processing chosen: what the P-6 itself offers (sample rate, mono, chop). Normalization,
+  silence trimming and fades from the initial brief are out of V1. Pitch was offered until
+  2026-08-20 and removed with the rest of the cleanup.
+- Revamp 2026-08-20, from Antoine's mockup: a monospace terminal look. JetBrains Mono
+  everywhere, yellow #F0E31C as the *only* signal color, near-black surfaces, 2px corners,
+  red kept for destructive actions. Amber is gone — with a yellow signal it was a
+  near-duplicate, so chop and the warnings took the signal color. Earlier passes went from
+  the Roland screenshot to a "classic" dark theme with a blue signal and Inter; both are
+  superseded.
+- The waveform stays blue against the yellow interface, as in the mockup: it separates the
+  audio from the controls, and nothing about it is clickable-yellow.
+- Yellow marks the next useful action rather than a fixed button rank — an empty pad's
+  **Load**, the selected pad's play and **Chop**, **Banks → key**, a dialog's confirmation —
+  which is why there is one accent modifier (`btn--primary`) and not two.
 - Waveform colors live in `js/ui/waveform.js` (`waveColor`), no longer duplicated in
   `main.js` and `ui/pad.js`.
 - Everything is written in English: app, README, this plan, comments. The import steps in
@@ -231,10 +275,8 @@
   this API does not see. Nothing to update when adding a module.
 - *stale-while-revalidate* rather than a versioned cache: no version number to bump, at
   the cost of being one reload behind after a change.
-- Pitch is baked into the written file as a speed change, not exposed as a P-6 parameter:
-  we resample to `sampleRate / 2^(cents/1200)` and declare the header at `sampleRate`.
 - Playback renders exactly the file that will be written, truncation included.
-- Trim is stored as ratios rather than frames, so it survives a rate or pitch change
+- Trim is stored as ratios rather than frames, so it survives a rate change
   untouched, and the waveform peaks — computed once on the whole source — stay the right
   drawing for a trimmed pad.
 - The trim handles live on the large waveform only: the pad waveforms show the window but

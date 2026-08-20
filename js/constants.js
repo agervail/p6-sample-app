@@ -6,10 +6,6 @@ export const DEFAULT_SAMPLE_RATE = 44100;
 export const BYTES_PER_FRAME_PER_CHANNEL = 2;
 export const MAX_PAD_BYTES = 512 * 1024;
 
-export const CENTS_PER_OCTAVE = 1200;
-export const PITCH_STEP_CENTS = 10;
-export const PITCH_LIMIT_CENTS = 1200;
-
 export const WAVEFORM_BUCKETS = 1400;
 export const TRIM_GRAB_PIXELS = 9;
 export const TRIM_MIN_SPAN_RATIO = 0.005;

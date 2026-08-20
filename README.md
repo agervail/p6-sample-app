@@ -1,7 +1,7 @@
 # P-6 Sample Manager
 
 USB key sample manager in the spirit of the Roland AIRA P-6: 8 banks of 6 pads, one WAV
-per pad, per-pad settings (sample rate, mono, pitch, slicing), then sequential writing
+per pad, per-pad settings (sample rate, mono, slicing), then sequential writing
 into the `IMPORT` folder of the key, in the layout the device expects.
 
 A web page with no build step and no runtime dependency other than Google Fonts.
@@ -38,7 +38,7 @@ therefore shows up on the second reload**, not the first.
 
 - **Load** opens the file picker; dropping a file onto a pad works too.
 - Clicking a waveform starts playback from that point. What you hear is exactly what
-  will be written: resampling, mono and pitch are applied before the preview, and
+  will be written: resampling and mono are applied before the preview, and
   whatever exceeds the pad memory is cut off.
 - The red hatched area on the waveform shows what will not fit.
 - Dragging the handles at both ends of the large waveform trims the sample: the dimmed
@@ -92,9 +92,6 @@ therefore shows up on the second reload**, not the first.
   the full `IMPORT/BANK_A…BANK_H/PAD_1…PAD_6/` tree, empty pad folders included, so
   unzipping it on a key gives a complete import folder. Reading accepts deflated entries
   too, since a ZIP made by the Finder or `zip` is compressed.
-- **Erase IMPORT folder** deletes the `WAV` and `PRM` files inside the pad folders and
-  leaves the folder tree in place — the device creates that tree, so it is not ours to
-  remove.
 
 ## P-6 constraints
 
@@ -117,7 +114,6 @@ this app shows the real capacity.
 ## Accepted limitations
 
 - WAV only: `decodeAudioData` is enough, no ffmpeg.wasm.
-- Pitch is a speed change, not a time-stretch: length varies with pitch.
 - The free space on the key is unknown to the browser; only the size to be written is
   shown.
 - No volume ejection, that stays with the Finder. macOS clutter to clean up afterwards:

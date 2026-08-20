@@ -9,7 +9,6 @@ function createPad() {
     peaks: null,
     sampleRate: DEFAULT_SAMPLE_RATE,
     mono: false,
-    pitchCents: 0,
     trimStart: 0,
     trimEnd: 1,
     sliceCount: 0,

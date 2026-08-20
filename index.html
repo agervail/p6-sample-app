@@ -6,9 +6,9 @@
 <title>P-6 Sample Manager</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0E1014">
+<meta name="theme-color" content="#0A0A0B">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="css/app.css">
@@ -31,7 +31,7 @@
         <button type="button" class="btn btn--icon" id="bank-previous" aria-label="Previous bank">
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12 4 6 10l6 6"/></svg>
         </button>
-        <strong class="bank-nav__id mono" id="bank-id">A</strong>
+        <strong class="bank-nav__id" id="bank-id">A</strong>
         <button type="button" class="btn btn--icon" id="bank-next" aria-label="Next bank">
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m8 4 6 6-6 6"/></svg>
         </button>
@@ -58,7 +58,7 @@
   <main class="grid" id="pad-grid"></main>
 
   <section class="storage">
-    <h2 class="panel-title">Memory</h2>
+    <h2 class="panel-title visually-hidden">Memory</h2>
 
     <div class="storage__figures">
       <div class="figure">
@@ -69,13 +69,15 @@
         <span class="label">All banks</span>
         <strong class="figure__value" id="total-size">0 KB</strong>
       </div>
-      <ul class="warnings" id="warnings"></ul>
+      <div class="banks-strip" id="bank-strip" aria-hidden="true"></div>
     </div>
+
+    <ul class="warnings" id="warnings"></ul>
 
     <div class="detail">
       <div class="detail__head">
         <span class="detail__name" id="detail-name">No sample selected</span>
-        <span class="detail__length mono" id="detail-length"></span>
+        <span class="detail__length" id="detail-length"></span>
         <button type="button" class="btn btn--quiet" id="reset-trim">Reset trim</button>
       </div>
       <canvas class="detail__wave" id="detail-wave" height="168"></canvas>
@@ -97,12 +99,10 @@
         </ol>
       </span>
     </span>
-    <button type="button" class="btn btn--accent" id="build-kit">Build kit</button>
+    <button type="button" class="btn" id="build-kit">Build kit</button>
     <button type="button" class="btn" id="save-preset">Save preset</button>
     <button type="button" class="btn" id="load-preset">Load preset</button>
     <button type="button" class="btn btn--danger" id="clear-bank">Clear bank</button>
-    <button type="button" class="btn btn--danger" id="wipe-import">Erase IMPORT folder</button>
-    <span class="wordmark">P-6</span>
   </footer>
 
 </div>
@@ -112,7 +112,7 @@
 <dialog class="dialog" id="chop-dialog">
   <form method="dialog" class="dialog__body">
     <h2 class="panel-title">Chop into slices</h2>
-    <p class="dialog__target mono" id="chop-target"></p>
+    <p class="dialog__target" id="chop-target"></p>
     <label class="dialog__row">
       <span class="label">Slices</span>
       <select class="select" id="chop-count"></select>
@@ -126,7 +126,7 @@
     </label>
     <div class="dialog__actions">
       <button type="submit" value="cancel" class="btn btn--quiet">Cancel</button>
-      <button type="submit" value="chop" class="btn btn--accent">Chop</button>
+      <button type="submit" value="chop" class="btn btn--primary">Chop</button>
     </div>
   </form>
 </dialog>
@@ -146,7 +146,7 @@
     <div class="kit__controls">
       <div class="row">
         <span class="label">Section</span>
-        <input type="number" class="input mono" id="kit-slice" aria-label="Section length in milliseconds">
+        <input type="number" class="input" id="kit-slice" aria-label="Section length in milliseconds">
         <span class="unit">ms</span>
         <button type="button" class="btn btn--quiet" id="kit-longest">Longest sample</button>
       </div>
@@ -187,7 +187,7 @@
 
     <div class="dialog__actions">
       <button type="button" class="btn btn--quiet" id="kit-cancel">Cancel</button>
-      <button type="button" class="btn btn--accent" id="kit-build">Build kit</button>
+      <button type="button" class="btn btn--primary" id="kit-build">Build kit</button>
     </div>
   </div>
 </dialog>
@@ -195,16 +195,16 @@
 <template id="kit-limit-template">
   <span class="kit__limit">
     <span class="kit__limit-rate" data-rate></span>
-    <span class="kit__limit-value mono" data-value></span>
+    <span class="kit__limit-value" data-value></span>
   </span>
 </template>
 
 <template id="kit-item-template">
   <li class="kit__item">
-    <span class="kit__index mono" data-index></span>
+    <span class="kit__index" data-index></span>
     <canvas class="kit__wave" data-wave height="34"></canvas>
     <span class="kit__name" data-name></span>
-    <span class="kit__length mono" data-length></span>
+    <span class="kit__length" data-length></span>
     <button type="button" class="btn btn--icon btn--quiet" data-up aria-label="Move up">
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 12l6-6 6 6"/></svg>
     </button>
@@ -222,25 +222,17 @@
     <header class="pad__head">
       <h2 class="pad__id"></h2>
       <p class="pad__name"></p>
+      <span class="pad__active">Active</span>
     </header>
 
-    <canvas class="pad__wave" data-wave height="88"></canvas>
+    <div class="pad__stage">
+      <canvas class="pad__wave" data-wave height="88"></canvas>
+    </div>
 
     <div class="row">
       <span class="label">Rate</span>
       <select class="select" data-rate aria-label="Sample rate"></select>
       <label class="check"><input type="checkbox" data-mono><span>Mono</span></label>
-    </div>
-
-    <div class="row">
-      <span class="label">Pitch</span>
-      <div class="stepper">
-        <button type="button" data-pitch-down aria-label="Lower the pitch">−</button>
-        <input type="number" class="stepper__value mono" data-pitch aria-label="Pitch in cents">
-        <button type="button" data-pitch-up aria-label="Raise the pitch">+</button>
-      </div>
-      <span class="unit">cents</span>
-      <button type="button" class="btn btn--quiet" data-pitch-reset>Reset</button>
     </div>
 
     <div class="pad__actions">
@@ -252,7 +244,7 @@
       <button type="button" class="btn btn--icon btn--danger" data-clear aria-label="Remove the sample">
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4 4 11h12zM4 15h12"/></svg>
       </button>
-      <button type="button" class="btn btn--accent" data-chop>Chop</button>
+      <button type="button" class="btn" data-chop>Chop</button>
     </div>
   </article>
 </template>

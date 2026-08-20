@@ -1,11 +1,9 @@
 import {
   BANK_FOLDER_PREFIX,
-  BANK_IDS,
   IMPORT_FOLDER_NAME,
   MAX_FILE_NAME_LENGTH,
   PAD_FOLDER_PREFIX,
   PAD_SETTINGS_EXTENSION,
-  PADS_PER_BANK,
   WAV_EXTENSION,
 } from '../constants.js';
 
@@ -80,28 +78,6 @@ async function fileNames(folder, matches) {
   return names.sort((left, right) => left.localeCompare(right));
 }
 
-async function existingDirectory(parent, name) {
-  try {
-    return await parent.getDirectoryHandle(name);
-  } catch (error) {
-    if (error.name === 'NotFoundError') return null;
-    throw error;
-  }
-}
-
-async function existingPadFolders(importFolder) {
-  const found = [];
-  for (const bankId of BANK_IDS) {
-    const bankFolder = await existingDirectory(importFolder, `${BANK_FOLDER_PREFIX}${bankId}`);
-    if (!bankFolder) continue;
-    for (let padIndex = 0; padIndex < PADS_PER_BANK; padIndex += 1) {
-      const folder = await existingDirectory(bankFolder, `${PAD_FOLDER_PREFIX}${padIndex + 1}`);
-      if (folder) found.push({ bankId, padIndex, folder });
-    }
-  }
-  return found;
-}
-
 async function padFolder(importFolder, bankId, padIndex) {
   const bankFolder = await importFolder.getDirectoryHandle(`${BANK_FOLDER_PREFIX}${bankId}`, CREATE);
   return bankFolder.getDirectoryHandle(`${PAD_FOLDER_PREFIX}${padIndex + 1}`, CREATE);
@@ -126,17 +102,4 @@ export async function writePads(importFolder, pads, onProgress) {
     if (pad.settings) await writeFile(folder, pad.settings.fileName, pad.settings.blob);
     onProgress(index + 1, pads.length, padPath(pad.bankId, pad.padIndex));
   }
-}
-
-export async function listPadFiles(importFolder) {
-  const locations = [{ folder: importFolder }, ...await existingPadFolders(importFolder)];
-  const files = [];
-  for (const { folder } of locations) {
-    for (const name of await fileNames(folder, isPadFile)) files.push({ folder, name });
-  }
-  return files;
-}
-
-export async function removeFiles(files) {
-  for (const file of files) await file.folder.removeEntry(file.name);
 }

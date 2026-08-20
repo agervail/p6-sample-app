@@ -1,13 +1,13 @@
 const HATCH_SIZE = 7;
 const CENTER_LINE_ALPHA = 0.3;
 const SIGNAL_COLOR = '#4D8DFD';
-const DIMMED_COLOR = '#39414F';
-const OVERFLOW_FILL = 'rgba(229, 84, 75, 0.16)';
-const OVERFLOW_STROKE = 'rgba(229, 84, 75, 0.55)';
-const SLICE_STROKE = 'rgba(224, 165, 58, 0.55)';
-const PLAYHEAD_STROKE = '#E8EAED';
-const TRIM_MASK_FILL = 'rgba(10, 12, 15, 0.68)';
-const TRIM_STROKE = '#A0A7B4';
+const DIMMED_COLOR = '#2E2E36';
+const OVERFLOW_FILL = 'rgba(242, 84, 74, 0.16)';
+const OVERFLOW_STROKE = 'rgba(242, 84, 74, 0.55)';
+const SLICE_STROKE = 'rgba(240, 227, 28, 0.55)';
+const PLAYHEAD_STROKE = '#EDEDEF';
+const TRIM_MASK_FILL = 'rgba(7, 7, 8, 0.72)';
+const TRIM_STROKE = '#9A9AA2';
 const TRIM_GRIP_WIDTH = 5;
 const TRIM_GRIP_HEIGHT = 14;
 

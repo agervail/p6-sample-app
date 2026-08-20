@@ -44,6 +44,7 @@ const undoButton = document.getElementById('undo');
 const redoButton = document.getElementById('redo');
 const bankSizeNode = document.getElementById('bank-size');
 const totalSizeNode = document.getElementById('total-size');
+const bankStrip = document.getElementById('bank-strip');
 const warningList = document.getElementById('warnings');
 const detailName = document.getElementById('detail-name');
 const detailLength = document.getElementById('detail-length');
@@ -111,8 +112,10 @@ function chopWarnings(bank) {
 
 function renderStorage(state) {
   const bank = store.currentBank();
+  const bytesPerBank = BANK_IDS.map((bankId) => bankBytes(state.banks[bankId]));
   bankSizeNode.textContent = formatBytes(bankBytes(bank));
-  totalSizeNode.textContent = formatBytes(BANK_IDS.reduce((total, bankId) => total + bankBytes(state.banks[bankId]), 0));
+  totalSizeNode.textContent = formatBytes(bytesPerBank.reduce((total, bytes) => total + bytes, 0));
+  bytesPerBank.forEach((bytes, index) => bankStrip.children[index].classList.toggle('is-filled', bytes > 0));
   warningList.replaceChildren(...[...truncationWarnings(bank), ...chopWarnings(bank)].map((text) => {
     const item = document.createElement('li');
     item.textContent = text;
@@ -253,7 +256,6 @@ async function applyChop() {
       source: chopped.source,
       peaks: chopped.peaks,
       sliceCount: chopped.sliceCount,
-      pitchCents: 0,
       trimStart: FULL_TRIM.start,
       trimEnd: FULL_TRIM.end,
     });
@@ -272,7 +274,6 @@ function applyKit(padIndex, kit) {
     sliceCount: kit.sliceCount,
     sampleRate: kit.sampleRate,
     mono: kit.mono,
-    pitchCents: 0,
     trimStart: FULL_TRIM.start,
     trimEnd: FULL_TRIM.end,
   });
@@ -411,23 +412,6 @@ async function loadPreset() {
   }
 }
 
-async function wipeImportFolder() {
-  const folder = await ensureDestination();
-  if (!folder) return;
-  try {
-    const files = await usb.listPadFiles(folder);
-    if (files.length === 0) {
-      showToast(`${destinationText()} is already empty`);
-      return;
-    }
-    if (!window.confirm(`Permanently delete ${files.length} files from ${destinationText()}?`)) return;
-    await usb.removeFiles(files);
-    showToast(`${files.length} files deleted`, 'done');
-  } catch (error) {
-    reportFailure(error);
-  }
-}
-
 function openKitDialog() {
   const state = store.getState();
   kitDialog.open({
@@ -475,6 +459,15 @@ function buildSelectors() {
   chopCount.value = String(CHOP_SLICE_COUNTS[2]);
 }
 
+function buildBankStrip() {
+  bankStrip.replaceChildren(...BANK_IDS.map((bankId) => {
+    const segment = document.createElement('span');
+    segment.className = 'banks-strip__segment';
+    segment.title = `Bank ${bankId}`;
+    return segment;
+  }));
+}
+
 async function restoreDestination() {
   const handle = await loadDestinationHandle();
   if (!handle) return;
@@ -504,7 +497,6 @@ function bindGlobalControls() {
     stop();
     store.clearCurrentBank();
   });
-  document.getElementById('wipe-import').addEventListener('click', wipeImportFolder);
   chopDialog.addEventListener('close', () => {
     if (chopDialog.returnValue === 'chop') applyChop();
   });
@@ -544,6 +536,7 @@ function start() {
     showToast('Unsupported browser: open this page in Chrome, Edge or Brave', 'error');
   }
   buildSelectors();
+  buildBankStrip();
   buildPads();
   kitDialog = createKitDialog({ onBuilt: applyKit });
   bindGlobalControls();

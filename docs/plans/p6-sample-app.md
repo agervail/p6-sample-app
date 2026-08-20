@@ -405,6 +405,15 @@
       `null` default — the overflow hatching silently vanished. It was the mixed module
       versions, not the change; a genuinely clean reload restored it.
 
+- [x] 2026-08-20 — **Fixed a narrow-width overflow I shipped in `a0c170b`**: adding
+      `mono file` / `folded to mono` to the detail head made that line long enough to push
+      the page into horizontal scroll below 560 px — `.detail__head` is a flex row that never
+      wrapped, 491 px of content in a 299 px box at 375 px. One line, `flex-wrap: wrap` in the
+      560 px query; `.detail__length`'s `margin-left: auto` still pushes the figures right on
+      their own line. It slipped through because the 375 px check for the row layout ran with
+      empty pads, and an empty pad has no length text at all — the overflow only exists once a
+      sample is loaded. Verified with a sample loaded at 375 px: `scrollWidth` back to 375.
+
 ## Decisions
 
 - Model: 8 banks × 6 pads, one WAV per pad, matching the device. It started at 4 banks from

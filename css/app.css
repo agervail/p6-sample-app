@@ -523,6 +523,7 @@ input[type="checkbox"]:disabled { opacity: 0.45; cursor: default; }
 @media (max-width: 560px) {
   .topbar { flex-direction: column; align-items: stretch; gap: 12px; }
   .topbar__group { flex-wrap: wrap; }
+  .detail__head { flex-wrap: wrap; }
   .topbar__group--end { margin-left: 0; }
   .actions { flex-wrap: wrap; }
   .actions .btn--danger { margin-left: 0; }

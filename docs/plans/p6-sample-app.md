@@ -414,6 +414,33 @@
       empty pads, and an empty pad has no length text at all — the overflow only exists once a
       sample is loaded. Verified with a sample loaded at 375 px: `scrollWidth` back to 375.
 
+- [x] 2026-08-20 — **A Norm button per row normalizes the sample to full scale**, over the
+      whole sound and ignoring the trim, which is what makes it simple: the gain is baked into
+      `pad.source` and `pad.peaks` is recomputed once, so the waveform cannot disagree with the
+      audio and everything downstream — playback, chop, preset, the write to the key — inherits
+      it with no render-time flag and no plumbing through the `forceMono` pattern. The
+      alternative I had sketched (a bank flag applied inside `renderPad`) would have needed the
+      drawing to apply a matching, trim-dependent gain — the same two-bases-diverging trap as
+      `playedSpan`. Baking it in sidesteps that entirely.
+      `normalize.js` holds both halves: `normalizeSource` scans for the true peak and scales,
+      `canNormalize` answers the button's disabled state off the existing peak buckets (cheap
+      enough for the per-frame render during playback) with a 0.999 floor, because
+      `peak × (1 / peak)` does not land on exactly 1 in floating point. Undo comes free — it is
+      a plain `editPad`, so Cmd+Z restores the quiet source. `sliceCount` and `beforeChop` are
+      untouched: normalizing a chopped pad keeps the chop, and reverting that chop afterwards
+      returns the pre-chop *unnormalized* sample, which is the honest reading of "back to the
+      whole sample". The frame count never changes, so nothing interacts with the 512 KB
+      ceiling, and `toSixteenBit` already clamps, so no gain can corrupt the output.
+      The fifth button forced the stacked layout below 700 px to give the actions their own
+      grid row — with five buttons they collided with the rate select. Verified in the browser:
+      25 % → `+12.1 dB`, 10 % → `+20.0 dB`, peak exactly 1.0 after, the button then disabled
+      (idempotent), disabled on silence and on an empty pad, undo re-enables it and redo
+      disables it again, chopping a normalized pad keeps it at full scale, and no horizontal
+      overflow at 375 or 1280 px.
+      Note for future browser checks: a scripted `dialog.close()` does not fire the `close`
+      event in the preview pane when it throttles queued tasks — the chop looked broken until
+      driven with real clicks. Not an app bug.
+
 ## Decisions
 
 - Model: 8 banks × 6 pads, one WAV per pad, matching the device. It started at 4 banks from

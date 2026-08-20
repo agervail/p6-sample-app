@@ -13,3 +13,8 @@ export function formatSeconds(seconds) {
 export function formatPadNumber(padIndex) {
   return String(padIndex + 1).padStart(2, '0');
 }
+
+export function formatDecibels(gain) {
+  const decibels = 20 * Math.log10(gain);
+  return `${decibels >= 0 ? '+' : ''}${decibels.toFixed(1)} dB`;
+}

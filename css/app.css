@@ -508,7 +508,8 @@ input[type="checkbox"]:disabled { opacity: 0.45; cursor: default; }
     grid-template-areas:
       "id   name    mono"
       "wave wave    wave"
-      "rate actions actions";
+      "rate rate    rate"
+      "actions actions actions";
     gap: 8px 12px;
     border-bottom: 1px solid var(--rule);
   }

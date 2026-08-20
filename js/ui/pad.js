@@ -1,5 +1,6 @@
 import { SAMPLE_RATES } from '../constants.js';
 import { formatPadNumber, formatSeconds } from '../format.js';
+import { canNormalize } from '../audio/normalize.js';
 import { padMetrics, trimWindow } from '../audio/process.js';
 import { drawWaveform, positionFromPointer, waveColor } from './waveform.js';
 
@@ -28,6 +29,7 @@ export function createPadView(padIndex, handlers) {
   const monoInput = element.querySelector('[data-mono]');
   const playButton = element.querySelector('[data-play]');
   const clearButton = element.querySelector('[data-clear]');
+  const normalizeButton = element.querySelector('[data-normalize]');
   const chopButton = element.querySelector('[data-chop]');
 
   element.querySelector('.pad__id').textContent = formatPadNumber(padIndex);
@@ -37,6 +39,7 @@ export function createPadView(padIndex, handlers) {
   element.querySelector('[data-load]').addEventListener('click', () => handlers.onLoad(padIndex));
   playButton.addEventListener('click', () => handlers.onPlay(padIndex, null));
   clearButton.addEventListener('click', () => handlers.onClear(padIndex));
+  normalizeButton.addEventListener('click', () => handlers.onNormalize(padIndex));
   chopButton.addEventListener('click', () => handlers.onChop(padIndex));
   canvas.addEventListener('click', (event) => handlers.onPlay(padIndex, positionFromPointer(canvas, event)));
 
@@ -71,6 +74,7 @@ export function createPadView(padIndex, handlers) {
 
     playButton.disabled = !isLoaded;
     clearButton.disabled = !isLoaded;
+    normalizeButton.disabled = !isLoaded || !canNormalize(pad.peaks);
     chopButton.disabled = !isLoaded;
     playButton.classList.toggle('is-playing', isPlaying);
 

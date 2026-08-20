@@ -6,9 +6,10 @@ import {
   PADS_PER_BANK,
   PAD_SETTINGS_EXTENSION,
 } from './constants.js';
-import { formatBytes, formatPadNumber, formatSeconds } from './format.js';
+import { formatBytes, formatDecibels, formatPadNumber, formatSeconds } from './format.js';
 import { chopPad } from './audio/chop.js';
 import { decodeWavFile } from './audio/decode.js';
+import { normalizeSource } from './audio/normalize.js';
 import { offsetWithinTrim, padMetrics, renderPad, trimWindow } from './audio/process.js';
 import { play, playingPadIndex, progress, stop } from './audio/player.js';
 import { encodeWav } from './audio/wav.js';
@@ -271,6 +272,14 @@ function revertChop() {
   showToast(`PAD ${padIndex + 1} is one whole sample again`, 'done');
 }
 
+function normalizePad(padIndex) {
+  const pad = store.currentBank().pads[padIndex];
+  if (!store.isPadLoaded(pad)) return;
+  const { source, peaks, gain } = normalizeSource(pad.source);
+  store.editPad(padIndex, { source, peaks });
+  showToast(`PAD ${padIndex + 1} normalized, ${formatDecibels(gain)}`, 'done');
+}
+
 function applyKit(padIndex, kit) {
   if (playingPadIndex() === padIndex) stop();
   store.editPad(padIndex, {
@@ -437,6 +446,7 @@ function buildPads() {
       if (playingPadIndex() === padIndex) stop();
       store.resetPad(padIndex);
     },
+    onNormalize: normalizePad,
     onChop: openChopDialog,
     onChange: store.editPad,
     onDrop: loadFileIntoPad,

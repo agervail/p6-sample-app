@@ -6,7 +6,7 @@ import {
   PADS_PER_BANK,
   PAD_SETTINGS_EXTENSION,
 } from './constants.js';
-import { formatBytes, formatSeconds } from './format.js';
+import { formatBytes, formatPadNumber, formatSeconds } from './format.js';
 import { chopPad } from './audio/chop.js';
 import { decodeWavFile } from './audio/decode.js';
 import { offsetWithinTrim, padMetrics, renderPad, trimWindow } from './audio/process.js';
@@ -34,18 +34,14 @@ const PRESET_PICKER_OPTIONS = {
 };
 
 const grid = document.getElementById('pad-grid');
-const bankIdNode = document.getElementById('bank-id');
-const previousBankButton = document.getElementById('bank-previous');
-const nextBankButton = document.getElementById('bank-next');
+const bankNav = document.getElementById('bank-nav');
 const bankMonoInput = document.getElementById('bank-mono');
 const destinationLabel = document.getElementById('destination-path');
 const destinationButton = document.getElementById('choose-destination');
 const undoButton = document.getElementById('undo');
 const redoButton = document.getElementById('redo');
-const bankSizeNode = document.getElementById('bank-size');
-const totalSizeNode = document.getElementById('total-size');
-const bankStrip = document.getElementById('bank-strip');
 const warningList = document.getElementById('warnings');
+const detailPad = document.getElementById('detail-pad');
 const detailName = document.getElementById('detail-name');
 const detailLength = document.getElementById('detail-length');
 const detailCanvas = document.getElementById('detail-wave');
@@ -62,6 +58,7 @@ let playbackFrame = null;
 let toastTimer = null;
 let kitDialog = null;
 const padViews = [];
+const bankButtons = new Map();
 
 function showToast(message, kind = 'info') {
   toast.textContent = message;
@@ -87,12 +84,6 @@ function renderDestination() {
   destinationButton.textContent = destinationNeedsPermission ? 'Re-authorize' : 'Choose…';
 }
 
-function bankBytes(bank) {
-  return bank.pads
-    .filter(store.isPadLoaded)
-    .reduce((total, pad) => total + padMetrics(pad, bank.forceMono).bytes, 0);
-}
-
 function truncationWarnings(bank) {
   return bank.pads.flatMap((pad, padIndex) => {
     if (!store.isPadLoaded(pad)) return [];
@@ -110,12 +101,7 @@ function chopWarnings(bank) {
   });
 }
 
-function renderStorage(state) {
-  const bank = store.currentBank();
-  const bytesPerBank = BANK_IDS.map((bankId) => bankBytes(state.banks[bankId]));
-  bankSizeNode.textContent = formatBytes(bankBytes(bank));
-  totalSizeNode.textContent = formatBytes(bytesPerBank.reduce((total, bytes) => total + bytes, 0));
-  bytesPerBank.forEach((bytes, index) => bankStrip.children[index].classList.toggle('is-filled', bytes > 0));
+function renderWarnings(bank) {
   warningList.replaceChildren(...[...truncationWarnings(bank), ...chopWarnings(bank)].map((text) => {
     const item = document.createElement('li');
     item.textContent = text;
@@ -129,6 +115,7 @@ function renderDetail(playhead) {
   const isLoaded = store.isPadLoaded(pad);
   const metrics = isLoaded ? padMetrics(pad, bank.forceMono) : null;
 
+  detailPad.textContent = `Pad ${formatPadNumber(store.getState().selectedPadIndex)}`;
   detailName.textContent = isLoaded ? pad.name : 'No sample on this pad';
   detailLength.textContent = isLoaded
     ? `${formatSeconds(metrics.seconds)} — memory ${formatSeconds(metrics.maxSeconds)} — ${formatBytes(metrics.bytes)}`
@@ -150,7 +137,11 @@ function renderDetail(playhead) {
 function render(state) {
   const bank = store.currentBank();
   const playhead = progress();
-  bankIdNode.textContent = state.currentBankId;
+  bankButtons.forEach((button, bankId) => {
+    const isCurrent = bankId === state.currentBankId;
+    button.classList.toggle('is-current', isCurrent);
+    button.setAttribute('aria-pressed', String(isCurrent));
+  });
   bankMonoInput.checked = bank.forceMono;
   undoButton.disabled = !store.canUndo();
   redoButton.disabled = !store.canRedo();
@@ -163,7 +154,7 @@ function render(state) {
     playhead,
   }));
 
-  renderStorage(state);
+  renderWarnings(bank);
   renderDetail(playhead);
 }
 
@@ -459,15 +450,6 @@ function buildSelectors() {
   chopCount.value = String(CHOP_SLICE_COUNTS[2]);
 }
 
-function buildBankStrip() {
-  bankStrip.replaceChildren(...BANK_IDS.map((bankId) => {
-    const segment = document.createElement('span');
-    segment.className = 'banks-strip__segment';
-    segment.title = `Bank ${bankId}`;
-    return segment;
-  }));
-}
-
 async function restoreDestination() {
   const handle = await loadDestinationHandle();
   if (!handle) return;
@@ -476,15 +458,26 @@ async function restoreDestination() {
   renderDestination();
 }
 
-function stepBank(offset) {
-  const current = BANK_IDS.indexOf(store.getState().currentBankId);
+function switchBank(bankId) {
+  if (store.getState().currentBankId === bankId) return;
   stop();
-  store.selectBank(BANK_IDS[(current + offset + BANK_IDS.length) % BANK_IDS.length]);
+  store.selectBank(bankId);
+}
+
+function buildBankNav() {
+  bankNav.replaceChildren(...BANK_IDS.map((bankId) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn btn--bank';
+    button.textContent = bankId;
+    button.title = `Bank ${bankId}`;
+    button.addEventListener('click', () => switchBank(bankId));
+    bankButtons.set(bankId, button);
+    return button;
+  }));
 }
 
 function bindGlobalControls() {
-  previousBankButton.addEventListener('click', () => stepBank(-1));
-  nextBankButton.addEventListener('click', () => stepBank(1));
   bankMonoInput.addEventListener('change', () => store.setForceMono(bankMonoInput.checked));
   destinationButton.addEventListener('click', () => (destinationNeedsPermission ? ensureDestination() : chooseDestination()));
   undoButton.addEventListener('click', store.undo);
@@ -536,7 +529,7 @@ function start() {
     showToast('Unsupported browser: open this page in Chrome, Edge or Brave', 'error');
   }
   buildSelectors();
-  buildBankStrip();
+  buildBankNav();
   buildPads();
   kitDialog = createKitDialog({ onBuilt: applyKit });
   bindGlobalControls();

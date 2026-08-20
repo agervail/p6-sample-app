@@ -194,7 +194,8 @@
       overwriting a key is unaffected. Verified in the browser (twice-reloaded past the
       service worker): the grid builds its 6 pads, no `[data-pitch]` node and no
       `#wipe-import` survive, the footer reads Banks → key / Build kit / Save preset / Load
-      preset / Clear bank, and the console is clean.
+      preset / Clear bank, and the console is clean. Commit `bb13281`, pushed to
+      `origin/main`.
 
 - [x] 2026-08-20 — **Visual direction switched to Antoine's mockup**: a monospace terminal
       look, yellow `#F0E31C` as the single signal color, near-black surfaces, 2px corners, no
@@ -222,6 +223,84 @@
       360 px width had always caused. Two corrections from Antoine's review: **Clear bank**
       keeps the red outline every other destructive control carries — the footer override that
       erased it is gone — and the frame no longer sits flush against the top of the viewport.
+      Commit `bb13281`, pushed to `origin/main`.
+
+- [x] 2026-08-20 — **Pads became a table instead of a card grid**, from a second mockup
+      Antoine sent: one row per pad under a `PAD / SAMPLE / WAVEFORM / RATE / MONO / ACTIONS`
+      header, so the six pads read as a list and a bank fits above the fold. The mockup's
+      `PITCH` column and `Erase IMPORT folder` button are the features dropped in `bb13281`
+      and the four banks are a mockup simplification — Antoine said to ignore all three, so
+      the layout is the whole change. The pad card's `pad__head` wrapper, its rate `row` and
+      the `ACTIVE` tag are gone; the row is flat markup, and selection now reads from the
+      yellow inset bar, the yellow pad number and a yellow tint fading rightwards.
+      **The table is one grid, not one per row**: `.pads` owns the six tracks and both
+      `.pads__head` and every `.pad` are `grid-template-columns: subgrid` spanning
+      `1 / -1`. A row-per-grid version aligned the header with nothing — the `auto` actions
+      track is 55 px of `ACTIONS` text in the header against ~200 px of buttons in a row, so
+      the `fr` tracks resolved to different widths in each. Subgrid also lets a loaded row's
+      button group size the shared actions column, which is why an empty row's **Load** lands
+      exactly under a loaded row's **Chop**. Below 700 px the rows drop out of the subgrid
+      into a three-line block (`grid-template-areas`) and the header hides.
+      An empty pad no longer hides its controls with `visibility: hidden`: the rate select is
+      `disabled` (chevron and underline removed, so it reads as the plain text the mockup
+      shows), the mono box is hidden and the row's other buttons are `display: none`, which is
+      what pushes **Load** to the right edge. `formatPadNumber` in `format.js` gives the row
+      and the detail panel their zero-padded `01`; the `PAD n` in warnings and toasts stays
+      unpadded, matching the `PAD_1` folder names. Restyled with the mockup: the detail panel
+      is a bordered box with the yellow top rule (the rule left `.storage`), its head carries
+      the selected pad's number, the memory figures are inline `label value` pairs at 18 px
+      instead of stacked at 24, the bank letter is a filled yellow chip, `btn--primary` is
+      filled yellow on black rather than outlined, and **Clear bank** is a red underlined
+      link. Checkbox styling moved from `.check input` to `input[type="checkbox"]`, since the
+      row's mono box has no label text to wrap it. Verified in the browser at 1280, 640 and
+      375 px with three samples pushed through the real modules: header and rows line up in
+      both the empty and loaded states, selection follows a click, the mono box toggles and
+      turns yellow, the chop-kit dialog survives the inline figures, and no leftover selector
+      matches the old card markup.
+
+- [x] 2026-08-20 — **Bank navigation is eight letter buttons**, A→H, instead of the
+      `‹ A ›` arrows: `buildBankNav` in `main.js` builds one `btn--bank` per `BANK_IDS`
+      entry, `render` toggles `is-current` and `aria-pressed` on each, and `switchBank`
+      stops playback before the switch — the guard on the already-current bank is what keeps
+      a click on the lit letter from cutting a preview. `stepBank`, `#bank-previous`,
+      `#bank-next` and `.bank-nav__id` are gone. The mockup's four banks were a
+      simplification; the device has eight and so does the strip beside the memory figures,
+      so eight letters keep the two readings of the same thing consistent. An idle letter is
+      borderless dim text, the current one the filled yellow chip the old `bank-nav__id`
+      was; the rules sit after `.btn:hover` in the stylesheet, which the outlined-on-hover
+      and filled-when-current states both need to win. Two narrow-width fixes the eight
+      buttons forced: `.topbar__group` wraps below 560 px (`Force mono` was pushed off
+      screen), and in the stacked pad layout the actions group now spans the last two
+      columns instead of sizing the last one alone — a 200 px button group was squeezing the
+      sample name to `kit…`. Verified at 1164, 640 and 375 px: the letters switch bank and
+      carry the sample state with them (bank D empty at 0 KB while all banks read 336 KB,
+      bank A intact on the way back), hover leaves the current letter filled, and
+      `scrollWidth` equals `clientWidth` at every width.
+
+- [x] 2026-08-20 — **The memory readout is gone**: Antoine's call, a bank will not come
+      close to the ceiling in practice. Out went the two figures (current bank / all banks),
+      the 8-segment strip that marked which banks hold audio, `bankBytes`, `buildBankStrip`,
+      and the `storage` section that wrapped them — the detail panel and the warning list now
+      sit straight in `.app`, whose 20 px gap replaces the section's 18. `renderStorage`
+      became `renderWarnings(bank)`, since the warnings were all it had left to do. What
+      stays, because it is per-pad rather than a total and it is what the app acts on: the
+      truncation and chop-value warnings, the hatched overflow zone on a waveform, and the
+      detail head's `memory 5.94s`, which names the ceiling the trim is measured against.
+      The occupancy signal the strip carried has no home now — the A→H letters would be the
+      place for it, not rebuilt until Antoine asks. Two rules fell out with their last user:
+      `.visually-hidden` (only the hidden `Memory` heading used it) and, moved rather than
+      dropped, `.figure` / `.figure__value` now live beside `.kit__figures`, their one
+      remaining caller. Verified in the browser: the app boots, the row of figures is gone
+      with no gap left behind, a 12 s sample on pad 3 still raises its warning under the
+      detail panel and hatches its overflow, and no selector matches the removed markup.
+
+- [x] 2026-08-20 — **Load moved to the end of a row's action group**, so the button sits in
+      the same column whether the pad is loaded or not: an empty row hides everything but
+      Load, so as long as Load is last, the right-aligned group puts it at the same x in both
+      states. It was first, which lined an empty row's Load up with a loaded row's Chop. Pure
+      markup order in `pad-template`, no CSS or handler change — the order is now play,
+      clear, Chop, Load. Measured in the browser across the six rows: `getBoundingClientRect`
+      on every Load reads left 1058 / right 1117, three loaded rows and three empty.
 
 ## Decisions
 

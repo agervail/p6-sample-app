@@ -9,3 +9,7 @@ export function formatBytes(bytes) {
 export function formatSeconds(seconds) {
   return `${seconds.toFixed(2)}s`;
 }
+
+export function formatPadNumber(padIndex) {
+  return String(padIndex + 1).padStart(2, '0');
+}

@@ -1,5 +1,5 @@
 import { SAMPLE_RATES } from '../constants.js';
-import { formatSeconds } from '../format.js';
+import { formatPadNumber, formatSeconds } from '../format.js';
 import { padMetrics, trimWindow } from '../audio/process.js';
 import { drawWaveform, positionFromPointer, waveColor } from './waveform.js';
 
@@ -26,7 +26,7 @@ export function createPadView(padIndex, handlers) {
   const clearButton = element.querySelector('[data-clear]');
   const chopButton = element.querySelector('[data-chop]');
 
-  element.querySelector('.pad__id').textContent = `PAD ${padIndex + 1}`;
+  element.querySelector('.pad__id').textContent = formatPadNumber(padIndex);
   fillRateOptions(rateSelect);
 
   element.addEventListener('pointerdown', () => handlers.onSelect(padIndex));
@@ -61,8 +61,9 @@ export function createPadView(padIndex, handlers) {
     nameNode.title = isLoaded ? `${pad.name} — ${formatSeconds(metrics.seconds)}` : '';
 
     rateSelect.value = String(pad.sampleRate);
+    rateSelect.disabled = !isLoaded;
     monoInput.checked = pad.mono || forceMono;
-    monoInput.disabled = forceMono;
+    monoInput.disabled = forceMono || !isLoaded;
 
     playButton.disabled = !isLoaded;
     clearButton.disabled = !isLoaded;

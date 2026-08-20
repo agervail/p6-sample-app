@@ -390,6 +390,7 @@ input[type="checkbox"]:disabled { opacity: 0.45; cursor: default; }
 .dialog__target { color: var(--signal); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dialog__row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .dialog__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+.dialog__aside { margin-right: auto; }
 
 .dialog--wide { width: min(760px, 92vw); }
 .dialog__note { margin: -4px 0 0; color: var(--ink-dim); line-height: 1.6; }

@@ -49,6 +49,7 @@ const resetTrimButton = document.getElementById('reset-trim');
 const chopDialog = document.getElementById('chop-dialog');
 const chopTarget = document.getElementById('chop-target');
 const chopCount = document.getElementById('chop-count');
+const chopRevertButton = document.getElementById('chop-revert');
 const chopMode = document.getElementById('chop-mode');
 const toast = document.getElementById('toast');
 
@@ -229,6 +230,7 @@ function openChopDialog(padIndex) {
   const pad = store.currentBank().pads[padIndex];
   if (!store.isPadLoaded(pad)) return;
   chopTarget.textContent = pad.name;
+  chopRevertButton.hidden = pad.beforeChop === null;
   chopDialog.returnValue = 'cancel';
   chopDialog.dataset.padIndex = String(padIndex);
   chopDialog.showModal();
@@ -242,18 +244,18 @@ async function applyChop() {
       sliceCount: Number(chopCount.value),
       mode: chopMode.value,
     });
-    store.editPad(padIndex, {
-      name: chopped.name,
-      source: chopped.source,
-      peaks: chopped.peaks,
-      sliceCount: chopped.sliceCount,
-      trimStart: FULL_TRIM.start,
-      trimEnd: FULL_TRIM.end,
-    });
+    store.commitChop(padIndex, chopped);
     showToast(`${chopped.sliceCount} slices on PAD ${padIndex + 1}`, 'done');
   } catch (error) {
     reportFailure(error);
   }
+}
+
+function revertChop() {
+  const padIndex = Number(chopDialog.dataset.padIndex);
+  if (playingPadIndex() === padIndex) stop();
+  store.revertChop(padIndex);
+  showToast(`PAD ${padIndex + 1} is one whole sample again`, 'done');
 }
 
 function applyKit(padIndex, kit) {
@@ -267,6 +269,7 @@ function applyKit(padIndex, kit) {
     mono: kit.mono,
     trimStart: FULL_TRIM.start,
     trimEnd: FULL_TRIM.end,
+    beforeChop: null,
   });
   store.selectPad(padIndex);
   showToast(`${kit.sliceCount} sections on PAD ${padIndex + 1} — set CHOP to ${kit.sliceCount}`, 'done');
@@ -492,6 +495,7 @@ function bindGlobalControls() {
   });
   chopDialog.addEventListener('close', () => {
     if (chopDialog.returnValue === 'chop') applyChop();
+    if (chopDialog.returnValue === 'unchop') revertChop();
   });
   window.addEventListener('resize', refresh);
   window.addEventListener('keydown', (event) => {

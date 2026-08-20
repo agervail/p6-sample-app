@@ -302,6 +302,27 @@
       clear, Chop, Load. Measured in the browser across the six rows: `getBoundingClientRect`
       on every Load reads left 1058 / right 1117, three loaded rows and three empty.
 
+- [x] 2026-08-20 — **A chop can be undone**: the dialog now offers *Back to the whole
+      sample*. The chop was one-way because `chopPad` renders the pad — trim, rate, mono fold
+      — then rearranges the slices into equal blocks and replaces `source`, so the original
+      audio was simply dropped; only `Cmd+Z` came back, and only until the next 40 edits. A
+      pad now carries `beforeChop`, and `state.js` owns the pair: `commitChop` stores
+      `{name, source, peaks, sliceCount, trimStart, trimEnd}` under it before overwriting,
+      `revertChop` puts them back and clears it. `commitChop` keeps the *first* snapshot
+      (`pad.beforeChop ?? unchoppedState(pad)`), so chopping a chopped pad still returns to
+      the untouched sample in one step rather than peeling off one chop at a time.
+      `sampleRate` and `mono` stay out of the snapshot: the chop does not touch them, and a
+      rate picked after the chop should survive the revert. The button is `hidden` rather
+      than disabled when there is nothing to restore — computed in `openChopDialog`.
+      **The snapshot has to die with the audio it describes**, or the revert restores an
+      unrelated sample: `loadPad` and `applyKit` both clear it, and `resetPad` builds a fresh
+      pad. A preset carries only the rendered WAV and the slice count, so a pad that comes
+      back from a preset has no snapshot and is not offered the revert — the original never
+      left the browser it was chopped in. Verified in the browser: chop 4 → chop 2 → revert
+      lands on the original in one step, reopening the dialog then hides the button, dropping
+      a new file on a chopped pad hides it too, and the detail waveform loses its slice
+      dividers on the way back.
+
 ## Decisions
 
 - Model: 8 banks × 6 pads, one WAV per pad, matching the device. It started at 4 banks from

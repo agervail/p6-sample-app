@@ -12,6 +12,7 @@ function createPad() {
     trimStart: 0,
     trimEnd: 1,
     sliceCount: 0,
+    beforeChop: null,
   };
 }
 
@@ -90,7 +91,32 @@ export function loadPad(padIndex, sample) {
     sliceCount: sample.sliceCount ?? 0,
     trimStart: 0,
     trimEnd: 1,
+    beforeChop: null,
   });
+}
+
+function unchoppedState(pad) {
+  const { name, source, peaks, sliceCount, trimStart, trimEnd } = pad;
+  return { name, source, peaks, sliceCount, trimStart, trimEnd };
+}
+
+export function commitChop(padIndex, chopped) {
+  const pad = currentBank().pads[padIndex];
+  editPad(padIndex, {
+    beforeChop: pad.beforeChop ?? unchoppedState(pad),
+    name: chopped.name,
+    source: chopped.source,
+    peaks: chopped.peaks,
+    sliceCount: chopped.sliceCount,
+    trimStart: 0,
+    trimEnd: 1,
+  });
+}
+
+export function revertChop(padIndex) {
+  const { beforeChop } = currentBank().pads[padIndex];
+  if (!beforeChop) return;
+  editPad(padIndex, { ...beforeChop, beforeChop: null });
 }
 
 export function resetPad(padIndex) {

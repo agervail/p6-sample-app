@@ -441,6 +441,27 @@
       event in the preview pane when it throttles queued tasks — the chop looked broken until
       driven with real clicks. Not an app bug.
 
+- [x] 2026-08-20 — **Norm targets -1 dBFS, not 0**, which is the usual delivery practice and
+      costs 1 dB out of 16-bit's 96. `TARGET_PEAK = 10 ** (-1 / 20)` replaces the full-scale
+      constant, and the button now works in *both* directions: a sample already at 0 dBFS is
+      pulled **down** to -1 dB, since "normalize to -1 dB" means set the peak there, not only
+      raise it. `canNormalize` therefore tests distance from the target rather than being below
+      it.
+      **The reason I first reached for does not hold here, and it is worth writing down so
+      nobody re-derives it**: the textbook argument is that resampling a 0 dBFS signal
+      overshoots and clips. Measured against this app's own resampler — square, click train,
+      white noise and a sine, each normalized to exactly 1.0, resampled 44100 → 22050 and
+      → 11025 — the peak ratio came back exactly 1.0000 in every case, and it stays 1.0000 at
+      input levels of 0.5 and 0.8, so it is not the destination clamping hiding an overshoot.
+      Chrome's `OfflineAudioContext` resampler simply does not overshoot on these signals.
+      What does justify the headroom is device-side and unmeasurable without the hardware: the
+      P-6's own filter, envelopes and reverb send run *after* the sample, and a pad at 0 dBFS
+      through a resonant filter clips inside the device; several pads at 0 dBFS also sum on its
+      mix bus. Verified: 25 % → `+11.0 dB`, 10 % → `+19.0 dB`, 0 dBFS → `-1.0 dB`, every one
+      landing on a peak of exactly -1.000 dB and the button then disabled. End to end through
+      `renderPad` + `encodeWav`, the written file peaks at 29205 of 32767 — -1.00 dBFS, no
+      clipping — at 44100, 22050 and 11025 Hz alike.
+
 ## Decisions
 
 - Model: 8 banks × 6 pads, one WAV per pad, matching the device. It started at 4 banks from

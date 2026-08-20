@@ -5,6 +5,10 @@ import { drawWaveform, positionFromPointer, waveColor } from './waveform.js';
 
 const EMPTY_LABEL = 'No sample';
 
+function isSourceMono(pad) {
+  return pad.source !== null && pad.source.channels.length === 1;
+}
+
 function fillRateOptions(select) {
   for (const rate of SAMPLE_RATES) {
     const option = document.createElement('option');
@@ -62,8 +66,8 @@ export function createPadView(padIndex, handlers) {
 
     rateSelect.value = String(pad.sampleRate);
     rateSelect.disabled = !isLoaded;
-    monoInput.checked = pad.mono || forceMono;
-    monoInput.disabled = forceMono || !isLoaded;
+    monoInput.checked = isLoaded && metrics.channelCount === 1;
+    monoInput.disabled = !isLoaded || forceMono || isSourceMono(pad);
 
     playButton.disabled = !isLoaded;
     clearButton.disabled = !isLoaded;

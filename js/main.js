@@ -85,6 +85,11 @@ function renderDestination() {
   destinationButton.textContent = destinationNeedsPermission ? 'Re-authorize' : 'Choose…';
 }
 
+function channelLayout(pad, channelCount) {
+  if (pad.source.channels.length === 1) return 'mono file';
+  return channelCount === 1 ? 'folded to mono' : 'stereo';
+}
+
 function truncationWarnings(bank) {
   return bank.pads.flatMap((pad, padIndex) => {
     if (!store.isPadLoaded(pad)) return [];
@@ -119,7 +124,7 @@ function renderDetail(playhead) {
   detailPad.textContent = `Pad ${formatPadNumber(store.getState().selectedPadIndex)}`;
   detailName.textContent = isLoaded ? pad.name : 'No sample on this pad';
   detailLength.textContent = isLoaded
-    ? `${formatSeconds(metrics.seconds)} — memory ${formatSeconds(metrics.maxSeconds)} — ${formatBytes(metrics.bytes)}`
+    ? `${formatSeconds(metrics.seconds)} — ${channelLayout(pad, metrics.channelCount)} — memory ${formatSeconds(metrics.maxSeconds)} — ${formatBytes(metrics.bytes)}`
     : '';
 
   resetTrimButton.disabled = !isLoaded || (pad.trimStart === FULL_TRIM.start && pad.trimEnd === FULL_TRIM.end);

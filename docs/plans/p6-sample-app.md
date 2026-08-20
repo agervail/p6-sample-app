@@ -323,6 +323,34 @@
       a new file on a chopped pad hides it too, and the detail waveform loses its slice
       dividers on the way back.
 
+- [x] 2026-08-20 — Antoine asked whether the detail head's `memory 5.94s` is wrong once you
+      pick mono or stereo. It is right, and it does move — the confusion is that a *mono
+      file* reads 5.94s whether or not the box is ticked, because `outputChannelCount`
+      already returns 1 for a single-channel source and there is nothing left to fold.
+      Measured on a stereo file at 44100: box off → `memory 2.97s — 413 KB`, box on →
+      `memory 5.94s — 207 KB`, half the bytes and twice the ceiling. It follows the rate too:
+      the same pad at 22050 reads `memory 11.89s — 47 KB`. `padMetrics` derives it from
+      `MAX_PAD_BYTES / (channelCount × 2) / pad.sampleRate`, so all three inputs are in it.
+      No change made.
+
+- [x] 2026-08-20 — **A pad says when its sample is already mono**, which the app had been
+      getting wrong rather than merely leaving unsaid: `loadPad` never set `pad.mono`, so a
+      one-channel file arrived with the box *unticked* while `outputChannelCount` returned 1
+      from the source anyway — the pad rendered and was written mono behind an unticked
+      control, and that is what made the `memory 5.94s` figure look wrong. The row's box now
+      reads the output (`metrics.channelCount === 1`) instead of the `pad.mono` flag, and is
+      disabled when the source has a single channel, since there is nothing left to fold. A
+      preset-loaded pad already behaved: `replaceAllBanks` sets `mono` from the channel count,
+      which is why the two paths disagreed.
+      A ticked-and-greyed box alone is ambiguous — force mono renders exactly the same — so
+      the detail head names the layout in words between the length and the memory:
+      `mono file` when the source has one channel, `folded to mono` when a stereo source is
+      being summed, `stereo` otherwise. Verified in the browser on a mono and a stereo file:
+      mono file → ticked, disabled, `1.10s — mono file — memory 5.94s — 95 KB`; stereo →
+      unticked, live, `2.40s — stereo — memory 2.97s — 413 KB`; the same pad with the box
+      ticked by hand → `folded to mono — memory 5.94s — 207 KB`, still live; and with Force
+      mono on the bank → same text, now disabled.
+
 ## Decisions
 
 - Model: 8 banks × 6 pads, one WAV per pad, matching the device. It started at 4 banks from

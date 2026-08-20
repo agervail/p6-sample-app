@@ -240,7 +240,8 @@
       the `fr` tracks resolved to different widths in each. Subgrid also lets a loaded row's
       button group size the shared actions column, which is why an empty row's **Load** lands
       exactly under a loaded row's **Chop**. Below 700 px the rows drop out of the subgrid
-      into a three-line block (`grid-template-areas`) and the header hides.
+      into a three-line block (`grid-template-areas`) and the header hides. Commit
+      `896b585`, pushed to `origin/main`.
       An empty pad no longer hides its controls with `visibility: hidden`: the rate select is
       `disabled` (chevron and underline removed, so it reads as the plain text the mockup
       shows), the mono box is hidden and the row's other buttons are `display: none`, which is
@@ -256,7 +257,7 @@
       375 px with three samples pushed through the real modules: header and rows line up in
       both the empty and loaded states, selection follows a click, the mono box toggles and
       turns yellow, the chop-kit dialog survives the inline figures, and no leftover selector
-      matches the old card markup.
+      matches the old card markup. Commit `896b585`, pushed to `origin/main`.
 
 - [x] 2026-08-20 — **Bank navigation is eight letter buttons**, A→H, instead of the
       `‹ A ›` arrows: `buildBankNav` in `main.js` builds one `btn--bank` per `BANK_IDS`
@@ -275,7 +276,8 @@
       sample name to `kit…`. Verified at 1164, 640 and 375 px: the letters switch bank and
       carry the sample state with them (bank D empty at 0 KB while all banks read 336 KB,
       bank A intact on the way back), hover leaves the current letter filled, and
-      `scrollWidth` equals `clientWidth` at every width.
+      `scrollWidth` equals `clientWidth` at every width. Commit `896b585`, pushed to
+      `origin/main`.
 
 - [x] 2026-08-20 — **The memory readout is gone**: Antoine's call, a bank will not come
       close to the ceiling in practice. Out went the two figures (current bank / all banks),
@@ -293,6 +295,7 @@
       remaining caller. Verified in the browser: the app boots, the row of figures is gone
       with no gap left behind, a 12 s sample on pad 3 still raises its warning under the
       detail panel and hatches its overflow, and no selector matches the removed markup.
+      Commit `896b585`, pushed to `origin/main`.
 
 - [x] 2026-08-20 — **Load moved to the end of a row's action group**, so the button sits in
       the same column whether the pad is loaded or not: an empty row hides everything but
@@ -300,7 +303,8 @@
       states. It was first, which lined an empty row's Load up with a loaded row's Chop. Pure
       markup order in `pad-template`, no CSS or handler change — the order is now play,
       clear, Chop, Load. Measured in the browser across the six rows: `getBoundingClientRect`
-      on every Load reads left 1058 / right 1117, three loaded rows and three empty.
+      on every Load reads left 1058 / right 1117, three loaded rows and three empty. Commit
+      `896b585`, pushed to `origin/main`.
 
 - [x] 2026-08-20 — **A chop can be undone**: the dialog now offers *Back to the whole
       sample*. The chop was one-way because `chopPad` renders the pad — trim, rate, mono fold
@@ -321,7 +325,7 @@
       left the browser it was chopped in. Verified in the browser: chop 4 → chop 2 → revert
       lands on the original in one step, reopening the dialog then hides the button, dropping
       a new file on a chopped pad hides it too, and the detail waveform loses its slice
-      dividers on the way back.
+      dividers on the way back. Commit `008b398`, pushed to `origin/main`.
 
 - [x] 2026-08-20 — Antoine asked whether the detail head's `memory 5.94s` is wrong once you
       pick mono or stereo. It is right, and it does move — the confusion is that a *mono
@@ -349,7 +353,7 @@
       mono file → ticked, disabled, `1.10s — mono file — memory 5.94s — 95 KB`; stereo →
       unticked, live, `2.40s — stereo — memory 2.97s — 413 KB`; the same pad with the box
       ticked by hand → `folded to mono — memory 5.94s — 207 KB`, still live; and with Force
-      mono on the bank → same text, now disabled.
+      mono on the bank → same text, now disabled. Commit `a0c170b`, pushed to `origin/main`.
 
 - [x] 2026-08-20 — **A bank that holds samples is outlined in yellow**, putting back the
       signal the 8-segment strip carried before `896b585` removed it — on the A→H letters
@@ -366,7 +370,14 @@
       moved from `buildBankNav` into `render`, being state rather than structure. Verified in
       the browser: loading into A and C outlines exactly those two while the current bank F
       stays filled, hovering A keeps it yellow, Clear bank drops A's outline, and undo brings
-      it back.
+      it back. Commit `9885032`, pushed to `origin/main`.
+
+- [x] 2026-08-20 — **The write button reads Banks → P6**, not Banks → key: the destination is
+      the device, and the app says `P-6` everywhere else. Label only — the `id` stays
+      `write-usb` and the destination is still the USB key the P-6 exposes. The two mentions
+      in the README and the design rule in this plan that enumerates the yellow actions moved
+      with it, so nothing documents a button that no longer exists; the mentions inside past
+      entries stay as they are, being a record of what was verified at the time.
 
 ## Decisions
 
@@ -402,7 +413,7 @@
 - The waveform stays blue against the yellow interface, as in the mockup: it separates the
   audio from the controls, and nothing about it is clickable-yellow.
 - Yellow marks the next useful action rather than a fixed button rank — an empty pad's
-  **Load**, the selected pad's play and **Chop**, **Banks → key**, a dialog's confirmation —
+  **Load**, the selected pad's play and **Chop**, **Banks → P6**, a dialog's confirmation —
   which is why there is one accent modifier (`btn--primary`) and not two.
 - Waveform colors live in `js/ui/waveform.js` (`waveColor`), no longer duplicated in
   `main.js` and `ui/pad.js`.

@@ -56,8 +56,8 @@ therefore shows up on the second reload**, not the first.
   is highlighted, and any rate too short for the current section length is flagged, so
   picking a length and a rate is reading a row rather than trial and error. The kit lands on
   the pad you choose, with its slice count already set.
-- **Banks → key** writes every loaded pad, one file after another, bank by bank.
-- The **?** next to **Banks → key** recalls what to do on the device itself.
+- **Banks → P6** writes every loaded pad, one file after another, bank by bank.
+- The **?** next to **Banks → P6** recalls what to do on the device itself.
 - **Save preset** saves the whole thing as a ZIP holding the complete `IMPORT` tree, `PRM`
   files included, so an earlier preset goes back on the key by unzipping it there.
 - **Load preset** reads such a ZIP back into the 8 banks. It takes the archive this app

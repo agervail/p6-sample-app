@@ -18,3 +18,7 @@ export function formatDecibels(gain) {
   const decibels = 20 * Math.log10(gain);
   return `${decibels >= 0 ? '+' : ''}${decibels.toFixed(1)} dB`;
 }
+
+export function formatLevel(peak) {
+  return `${(20 * Math.log10(peak)).toFixed(1)} dB`;
+}

@@ -462,6 +462,28 @@
       `renderPad` + `encodeWav`, the written file peaks at 29205 of 32767 — -1.00 dBFS, no
       clipping — at 44100, 22050 and 11025 Hz alike.
 
+- [x] 2026-08-20 — **The detail head shows the peak level**, so a greyed-out Norm explains
+      itself. Antoine asked why the button is sometimes already disabled on opening a sample;
+      measured by sweeping the level, the disabled window is **-1.005 to -0.995 dBFS**, 0.01 dB
+      wide, plus pure silence. It is not a bug — it means the sample is already at the target —
+      and it happens often because -1 dBFS is itself one of the standard normalization targets
+      for sample packs, and because any pad this app normalized (or a preset saved afterwards)
+      reads exactly -1 dB. Nothing said so on screen, hence the question, hence this readout:
+      `1.00s — mono file — peak -12.0 dB — memory 5.94s — 86 KB`, or `silent` when the peak is
+      zero, which is the other disabled case.
+      `peakOf` moved from `normalize.js` to `peaks.js`, which owns the bucket structure it
+      reads, and `normalize.js` now imports it — the display and the button's disabled state
+      are answering the same question, so they must not compute it twice. `formatLevel` sits
+      beside `formatDecibels` rather than reusing it: a *gain* wants its leading `+`, a *level*
+      does not, or a full-scale sample would read `+0.0 dB`.
+      The longer line needed two CSS fixes, not one. `flex-wrap: wrap` moved from the 560 px
+      query onto the base `.detail__head` rule — a row that wraps only when it must is safer
+      than guessing a breakpoint — but wrapping alone did nothing, because `.detail__length`
+      still carried `white-space: nowrap`, so a 56-character run could not break at all. That
+      `nowrap` dated from when the text was half as long. Verified with a sample loaded at 375,
+      560, 700 and 1280 px: `scrollWidth` equals `clientWidth` at every one, and the line still
+      sits on one row on a wide screen.
+
 ## Decisions
 
 - Model: 8 banks × 6 pads, one WAV per pad, matching the device. It started at 4 banks from

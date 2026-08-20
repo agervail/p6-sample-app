@@ -1,17 +1,9 @@
 import { WAVEFORM_BUCKETS } from '../constants.js';
-import { computePeaks } from './peaks.js';
+import { computePeaks, peakOf } from './peaks.js';
 
 const TARGET_PEAK_DB = -1;
 const TARGET_PEAK = 10 ** (TARGET_PEAK_DB / 20);
 const AT_TARGET_TOLERANCE = 0.001;
-
-function peakOf(peaks) {
-  let peak = 0;
-  for (let bucket = 0; bucket < peaks.maximums.length; bucket += 1) {
-    peak = Math.max(peak, peaks.maximums[bucket], -peaks.minimums[bucket]);
-  }
-  return peak;
-}
 
 export function canNormalize(peaks) {
   const peak = peakOf(peaks);

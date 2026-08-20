@@ -21,3 +21,11 @@ export function computePeaks(channels, bucketCount) {
   }
   return { minimums, maximums };
 }
+
+export function peakOf(peaks) {
+  let peak = 0;
+  for (let bucket = 0; bucket < peaks.maximums.length; bucket += 1) {
+    peak = Math.max(peak, peaks.maximums[bucket], -peaks.minimums[bucket]);
+  }
+  return peak;
+}

@@ -6,10 +6,11 @@ import {
   PADS_PER_BANK,
   PAD_SETTINGS_EXTENSION,
 } from './constants.js';
-import { formatBytes, formatDecibels, formatPadNumber, formatSeconds } from './format.js';
+import { formatBytes, formatDecibels, formatLevel, formatPadNumber, formatSeconds } from './format.js';
 import { chopPad } from './audio/chop.js';
 import { decodeWavFile } from './audio/decode.js';
 import { normalizeSource } from './audio/normalize.js';
+import { peakOf } from './audio/peaks.js';
 import { offsetWithinTrim, padMetrics, renderPad, trimWindow } from './audio/process.js';
 import { play, playingPadIndex, progress, stop } from './audio/player.js';
 import { encodeWav } from './audio/wav.js';
@@ -90,6 +91,11 @@ function bankHasSamples(bank) {
   return bank.pads.some(store.isPadLoaded);
 }
 
+function peakLabel(peaks) {
+  const peak = peakOf(peaks);
+  return peak === 0 ? 'silent' : `peak ${formatLevel(peak)}`;
+}
+
 function channelLayout(pad, channelCount) {
   if (pad.source.channels.length === 1) return 'mono file';
   return channelCount === 1 ? 'folded to mono' : 'stereo';
@@ -129,7 +135,7 @@ function renderDetail(playhead) {
   detailPad.textContent = `Pad ${formatPadNumber(store.getState().selectedPadIndex)}`;
   detailName.textContent = isLoaded ? pad.name : 'No sample on this pad';
   detailLength.textContent = isLoaded
-    ? `${formatSeconds(metrics.seconds)} — ${channelLayout(pad, metrics.channelCount)} — memory ${formatSeconds(metrics.maxSeconds)} — ${formatBytes(metrics.bytes)}`
+    ? `${formatSeconds(metrics.seconds)} — ${channelLayout(pad, metrics.channelCount)} — ${peakLabel(pad.peaks)} — memory ${formatSeconds(metrics.maxSeconds)} — ${formatBytes(metrics.bytes)}`
     : '';
 
   resetTrimButton.disabled = !isLoaded || (pad.trimStart === FULL_TRIM.start && pad.trimEnd === FULL_TRIM.end);

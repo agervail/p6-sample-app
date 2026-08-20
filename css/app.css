@@ -185,6 +185,7 @@ input[type="checkbox"]:disabled { opacity: 0.45; cursor: default; }
   color: var(--ink-dim);
 }
 .btn--bank:hover:not(.is-current) { border-color: var(--rule-strong); }
+.btn--bank.has-samples, .btn--bank.has-samples:hover { border-color: var(--signal); }
 .btn--bank.is-current, .btn--bank.is-current:hover:not(:disabled) {
   background: var(--signal);
   border-color: var(--signal);

@@ -85,6 +85,10 @@ function renderDestination() {
   destinationButton.textContent = destinationNeedsPermission ? 'Re-authorize' : 'Choose…';
 }
 
+function bankHasSamples(bank) {
+  return bank.pads.some(store.isPadLoaded);
+}
+
 function channelLayout(pad, channelCount) {
   if (pad.source.channels.length === 1) return 'mono file';
   return channelCount === 1 ? 'folded to mono' : 'stereo';
@@ -145,8 +149,11 @@ function render(state) {
   const playhead = progress();
   bankButtons.forEach((button, bankId) => {
     const isCurrent = bankId === state.currentBankId;
+    const hasSamples = bankHasSamples(state.banks[bankId]);
     button.classList.toggle('is-current', isCurrent);
+    button.classList.toggle('has-samples', hasSamples);
     button.setAttribute('aria-pressed', String(isCurrent));
+    button.title = hasSamples ? `Bank ${bankId} — holds samples` : `Bank ${bankId}`;
   });
   bankMonoInput.checked = bank.forceMono;
   undoButton.disabled = !store.canUndo();
@@ -309,7 +316,7 @@ async function chooseDestination() {
 
 function hasLoadedPad() {
   const { banks } = store.getState();
-  return BANK_IDS.some((bankId) => banks[bankId].pads.some(store.isPadLoaded));
+  return BANK_IDS.some((bankId) => bankHasSamples(banks[bankId]));
 }
 
 function settingsFor(pad, bankId, padIndex, frames) {
@@ -478,7 +485,6 @@ function buildBankNav() {
     button.type = 'button';
     button.className = 'btn btn--bank';
     button.textContent = bankId;
-    button.title = `Bank ${bankId}`;
     button.addEventListener('click', () => switchBank(bankId));
     bankButtons.set(bankId, button);
     return button;

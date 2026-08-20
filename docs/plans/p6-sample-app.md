@@ -351,6 +351,23 @@
       ticked by hand → `folded to mono — memory 5.94s — 207 KB`, still live; and with Force
       mono on the bank → same text, now disabled.
 
+- [x] 2026-08-20 — **A bank that holds samples is outlined in yellow**, putting back the
+      signal the 8-segment strip carried before `896b585` removed it — on the A→H letters
+      this time, where the bank is actually chosen, rather than in a separate bar. The three
+      button states stay distinguishable: plain dim letter (empty), yellow outline (holds
+      samples), filled yellow (current, whether or not it holds samples). `bankHasSamples`
+      only asks `pads.some(isPadLoaded)` — the removed `bankBytes` summed `padMetrics` per
+      pad for a figure nobody reads now, and `hasLoadedPad` was rewritten on top of the new
+      helper rather than repeating the same `some`. The CSS rule needs the redundant-looking
+      `.btn--bank.has-samples:hover` selector: `.btn--bank:hover:not(.is-current)` and
+      `.btn--bank:hover` both score 0,3,0, so without a matching 0,3,0 selector the yellow
+      outline vanished under the pointer. The letter's `title` now carries the same fact
+      (`Bank A — holds samples`), since an outline alone says nothing to a screen reader; it
+      moved from `buildBankNav` into `render`, being state rather than structure. Verified in
+      the browser: loading into A and C outlines exactly those two while the current bank F
+      stays filled, hovering A keeps it yellow, Clear bank drops A's outline, and undo brings
+      it back.
+
 ## Decisions
 
 - Model: 8 banks × 6 pads, one WAV per pad, matching the device. It started at 4 banks from

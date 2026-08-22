@@ -523,7 +523,28 @@
       `chop_64slices_…` with 63, neither raising a warning, and `padSettings` writes
       `CHOP\t= 64` read back as 64. Transient placement asked for 64 on a 7-hit sample
       returns 7 — a count that now ships a `PRM` instead of a warning. Console clean.
+      Commit `192026c`.
       Writing such a kit to a real key and chopping it on the device still needs the hardware.
+
+- [x] 2026-08-22 — **A dialog, not a fading toast, when the browser has no File System
+      Access API**, at Antoine's request: `Unsupported browser: open this page in Chrome, Edge
+      or Brave` went past in a toast and said nothing about *what* would fail. `#browser-dialog`
+      now opens on first paint and names it — destination and **Banks → P6** unreachable, the
+      two preset buttons and every **Load** / **Add samples…** picker dead, dropping files in
+      as the way round it — then says what is unaffected (drag and drop, playback, trim,
+      **Norm**, **Chop**, **Build kit**) and closes on **Continue anyway**, because a read-only
+      page is still worth using. The gate stays `usb.isSupported()`, i.e. the presence of
+      `showDirectoryPicker` rather than a user-agent sniff: it is the exact capability the
+      broken buttons need, and it does not lie about a Chromium fork. It is shown at the *end*
+      of `start()`, after the grid is built, so what the dialog talks about is already behind
+      it.
+      Verified in Chrome: `isSupported()` true and the dialog stays shut on boot; with
+      `window.showDirectoryPicker` deleted it returns false, which is the branch that opens it.
+      Rendered at 1280 and 375 px — the new `.dialog--text` (560 px measure) also drops
+      `.dialog`'s `min-width: 380px`, which at 375 px pushed 5 px of a dialog off-screen; it now
+      measures 343 px inside a 375 px viewport, and **Continue anyway** closes it. The
+      non-Chromium path itself is untested — it needs Safari or Firefox, which this session has
+      no way to drive.
 
 ## Decisions
 
@@ -615,6 +636,9 @@
   the unit of the section input they constrain, while the figures below stay in seconds.
 - Mono versus stereo is not a fifth column: the row already updates when the layout changes,
   and eight numbers would stop being readable at a glance.
+- The unsupported-browser warning tests for `showDirectoryPicker`, not for a browser name:
+  the user agent string is a guess about a capability we can simply ask for, and a Chromium
+  fork would be told it cannot do something it can.
 - The `PRM` is written for chopped pads only. For an unchopped pad every field would be the
   factory default, which is what the device already applies — the file would carry no
   information and would only add a guess about a format we cannot test.

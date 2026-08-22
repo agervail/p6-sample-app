@@ -49,6 +49,7 @@ const detailName = document.getElementById('detail-name');
 const detailLength = document.getElementById('detail-length');
 const detailCanvas = document.getElementById('detail-wave');
 const resetTrimButton = document.getElementById('reset-trim');
+const browserDialog = document.getElementById('browser-dialog');
 const chopDialog = document.getElementById('chop-dialog');
 const chopTarget = document.getElementById('chop-target');
 const chopCount = document.getElementById('chop-count');
@@ -552,9 +553,6 @@ function registerServiceWorker() {
 
 function start() {
   document.documentElement.dataset.booted = 'true';
-  if (!usb.isSupported()) {
-    showToast('Unsupported browser: open this page in Chrome, Edge or Brave', 'error');
-  }
   buildSelectors();
   buildBankNav();
   buildPads();
@@ -565,6 +563,7 @@ function start() {
   renderDestination();
   registerServiceWorker();
   restoreDestination().catch(reportFailure);
+  if (!usb.isSupported()) browserDialog.showModal();
 }
 
 start();

@@ -20,6 +20,12 @@ The File System Access API only exists on Chromium and requires a secure origin:
 in a cross-origin iframe either. Opened over `file://`, it shows a notice with the
 command to run instead of a blank page.
 
+Opened in a browser without that API — Safari, Firefox — the page loads and says so on
+first paint: a dialog lists what cannot work (the destination, **Banks → P6**, the two
+preset buttons and every **Load** / **Add samples…** picker) against what still does
+(drag and drop, playback, trim, **Norm**, **Chop**, **Build kit**), then lets you carry on.
+The check is the API itself, `showDirectoryPicker`, not the user agent string.
+
 ## Install as an application
 
 The page is a PWA: served from `localhost` or `https://`, Chrome offers to install it

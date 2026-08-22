@@ -181,6 +181,29 @@
   </div>
 </dialog>
 
+<dialog class="dialog dialog--text" id="browser-dialog">
+  <form method="dialog" class="dialog__body">
+    <h2 class="panel-title">This browser cannot reach the P-6</h2>
+    <p class="dialog__note">Choosing a folder, writing files and every file picker go through the
+      File System Access API, which only Chromium browsers implement — Chrome, Edge, Brave, Opera.
+      This one does not have it, so:</p>
+    <ul class="dialog__list">
+      <li><strong>Choose…</strong> and <strong>Banks → P6</strong> cannot reach the key: no
+        destination can be selected, and nothing is written to the P-6.</li>
+      <li><strong>Save preset</strong> and <strong>Load preset</strong> both open a picker, so a
+        session cannot leave the page or come back into it.</li>
+      <li><strong>Load</strong> on a pad and <strong>Add samples…</strong> in the kit open the same
+        picker. Dropping the WAV files on the pad row, or into the kit dialog, works instead.</li>
+    </ul>
+    <p class="dialog__note">What stays inside the page is unaffected: drag and drop, playback,
+      trim, <strong>Norm</strong>, <strong>Chop</strong> and <strong>Build kit</strong>. Open the
+      page in Chrome to write to the device.</p>
+    <div class="dialog__actions">
+      <button type="submit" value="close" class="btn btn--primary">Continue anyway</button>
+    </div>
+  </form>
+</dialog>
+
 <template id="kit-limit-template">
   <span class="kit__limit">
     <span class="kit__limit-rate" data-rate></span>

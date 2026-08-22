@@ -394,7 +394,11 @@ input[type="checkbox"]:disabled { opacity: 0.45; cursor: default; }
 .dialog__aside { margin-right: auto; }
 
 .dialog--wide { width: min(760px, 92vw); }
+.dialog--text { width: min(560px, 92vw); min-width: 0; }
 .dialog__note { margin: -4px 0 0; color: var(--ink-dim); line-height: 1.6; }
+.dialog__list { margin: 0; padding-left: 18px; display: grid; gap: 10px; color: var(--ink-dim); line-height: 1.6; }
+.dialog__list li::marker { color: var(--signal); }
+.dialog__list strong { color: var(--ink); font-weight: 500; }
 
 /* --- chop kit --- */
 

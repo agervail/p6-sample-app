@@ -1,7 +1,8 @@
 import {
   BYTES_PER_FRAME_PER_CHANNEL,
   MAX_PAD_BYTES,
-  P6_CHOP_VALUES,
+  P6_MAX_CHOP,
+  P6_MIN_CHOP,
   WAVEFORM_BUCKETS,
 } from '../constants.js';
 import { computePeaks } from './peaks.js';
@@ -9,11 +10,12 @@ import { foldToMono, resampleChannels } from './process.js';
 
 const FILE_EXTENSION = /\.[^.]*$/;
 
-export const MAX_KIT_SOURCES = P6_CHOP_VALUES[P6_CHOP_VALUES.length - 1];
+export const MIN_KIT_SOURCES = P6_MIN_CHOP;
+export const MAX_KIT_SOURCES = P6_MAX_CHOP;
 
 function sectionCount(sourceCount) {
-  if (sourceCount === 0) return null;
-  return P6_CHOP_VALUES.find((chopValue) => chopValue >= sourceCount) ?? null;
+  if (sourceCount < MIN_KIT_SOURCES || sourceCount > MAX_KIT_SOURCES) return null;
+  return sourceCount;
 }
 
 function kitChannelCount(sources, mono) {
@@ -36,7 +38,6 @@ export function kitMetrics(sources, { sliceSeconds, sampleRate, mono }) {
   return {
     channelCount,
     sections,
-    silentSections: sections === null ? 0 : sections - sources.length,
     sliceFrames,
     sliceSeconds: sliceFrames / sampleRate,
     frames,
@@ -58,7 +59,7 @@ function kitName(sources, sections) {
 
 export async function combineIntoKit(sources, options) {
   const metrics = kitMetrics(sources, options);
-  if (metrics.sections === null) throw new Error(`A kit holds at most ${MAX_KIT_SOURCES} samples`);
+  if (metrics.sections === null) throw new Error(`A kit holds ${MIN_KIT_SOURCES} to ${MAX_KIT_SOURCES} samples`);
   const channels = Array.from({ length: metrics.channelCount }, () => new Float32Array(metrics.frames));
 
   for (const [index, source] of sources.entries()) {

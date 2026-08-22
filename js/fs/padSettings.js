@@ -1,8 +1,7 @@
-import { BANK_IDS, P6_CHOP_VALUES, PADS_PER_BANK } from '../constants.js';
+import { BANK_IDS, P6_MAX_CHOP, P6_MIN_CHOP, PADS_PER_BANK } from '../constants.js';
 
 const ASSIGNMENT = '\t= ';
 const LINE_END = '\n';
-const NO_CHOP = P6_CHOP_VALUES[0];
 
 const CHOP_LINE = new RegExp(`^CHOP${ASSIGNMENT}(\\d+)$`, 'm');
 
@@ -72,18 +71,14 @@ const PAD_FIELDS = new Map([
 ]);
 
 export function isChopped(sliceCount) {
-  return sliceCount > NO_CHOP;
-}
-
-export function isChopValue(sliceCount) {
-  return P6_CHOP_VALUES.includes(sliceCount);
+  return Number.isInteger(sliceCount) && sliceCount >= P6_MIN_CHOP && sliceCount <= P6_MAX_CHOP;
 }
 
 export function readChop(text) {
   const match = text.match(CHOP_LINE);
   if (!match) return null;
   const chop = Number(match[1]);
-  if (!isChopped(chop) || !isChopValue(chop)) return null;
+  if (!isChopped(chop)) return null;
   return chop;
 }
 

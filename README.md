@@ -44,18 +44,20 @@ therefore shows up on the second reload**, not the first.
 - Dragging the handles at both ends of the large waveform trims the sample: the dimmed
   parts are neither previewed nor written, and the size and length update as you drag.
   **Reset trim** puts the whole sample back.
-- **Chop** cuts the sample into equal-length slices, either evenly or on detected
-  transients, and replaces the sample with the result on the same pad.
+- **Chop** cuts the sample into 2 to 64 equal-length slices — the device's whole CHOP
+  range — either evenly or on detected transients, and replaces the sample with the result
+  on the same pad. On transients it can find fewer boundaries than asked, and the count it
+  finds is the one the `PRM` carries.
 - **Build kit** goes the other way: several WAV files become one pad of equal-length
   sections, so the device’s CHOP lands exactly on their boundaries. Drop the samples in,
-  order them, and the section count is rounded up to a chop value the P-6 offers
-  (1, 2, 4, 8, 16, 32), the spare sections staying silent. A sample shorter than a section
-  is padded with silence, a longer one is cut, and everything is resampled and folded to
-  the kit’s own rate and layout. **Max section** shows live, for the current section count
-  and mono/stereo layout, the longest section each sample rate can hold — the selected rate
-  is highlighted, and any rate too short for the current section length is flagged, so
-  picking a length and a rate is reading a row rather than trial and error. The kit lands on
-  the pad you choose, with its slice count already set.
+  order them, and the section count is simply how many there are — the P-6 chops into any
+  count from 2 to 64, so there is nothing to round and no filler section. A sample shorter
+  than a section is padded with silence, a longer one is cut, and everything is resampled
+  and folded to the kit’s own rate and layout. **Max section** shows live, for the current
+  section count and mono/stereo layout, the longest section each sample rate can hold —
+  the selected rate is highlighted, and any rate too short for the current section length
+  is flagged, so picking a length and a rate is reading a row rather than trial and error.
+  The kit lands on the pad you choose, with its slice count already set.
 - **Banks → P6** writes every loaded pad, one file after another, bank by bank.
 - The **?** next to **Banks → P6** recalls what to do on the device itself.
 - **Save preset** saves the whole thing as a ZIP holding the complete `IMPORT` tree, `PRM`
@@ -84,9 +86,9 @@ therefore shows up on the second reload**, not the first.
   the flat pad index (A-1 = 0 … H-6 = 47), and the other 58 fields at the values an
   untouched factory pad carries. Unchopped pads get no `PRM`: the device's defaults are
   already what we would write.
-- A chop the device cannot express — transient placement can return a count like 3, and the
-  P-6 chops into 1, 2, 4, 8, 16 or 32 — gets no `PRM`, and the Memory panel says so rather
-  than shipping a file that describes the wrong grid.
+- Any count from 2 to 64 is a `CHOP` the device can express, which covers every chop and
+  every kit this app produces — including a transient placement that lands on an odd count
+  like 3.
 - Export as 16-bit PCM WAV, with a hand-written header.
 - A preset is a hand-written ZIP (stored, no compression — WAV barely compresses) carrying
   the full `IMPORT/BANK_A…BANK_H/PAD_1…PAD_6/` tree, empty pad folders included, so

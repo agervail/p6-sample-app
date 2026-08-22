@@ -448,13 +448,6 @@ input[type="checkbox"]:disabled { opacity: 0.45; cursor: default; }
   border: 1px solid var(--rule);
   border-radius: var(--radius);
 }
-.kit__item--silent {
-  justify-content: center;
-  border-style: dashed;
-  background: none;
-  color: var(--ink-faint);
-  font-size: 12px;
-}
 
 .kit__index { width: 16px; color: var(--ink-faint); text-align: right; }
 .kit__wave { width: 108px; height: 34px; background: var(--wave-bg); }

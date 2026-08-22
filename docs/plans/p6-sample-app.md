@@ -460,7 +460,8 @@
       mix bus. Verified: 25 % → `+11.0 dB`, 10 % → `+19.0 dB`, 0 dBFS → `-1.0 dB`, every one
       landing on a peak of exactly -1.000 dB and the button then disabled. End to end through
       `renderPad` + `encodeWav`, the written file peaks at 29205 of 32767 — -1.00 dBFS, no
-      clipping — at 44100, 22050 and 11025 Hz alike.
+      clipping — at 44100, 22050 and 11025 Hz alike. Commit `7781b42`, pushed to
+      `origin/main`.
 
 - [x] 2026-08-20 — **The detail head shows the peak level**, so a greyed-out Norm explains
       itself. Antoine asked why the button is sometimes already disabled on opening a sample;
@@ -482,7 +483,47 @@
       still carried `white-space: nowrap`, so a 56-character run could not break at all. That
       `nowrap` dated from when the text was half as long. Verified with a sample loaded at 375,
       560, 700 and 1280 px: `scrollWidth` equals `clientWidth` at every one, and the line still
-      sits on one row on a wide screen.
+      sits on one row on a wide screen. Commit `6a2e3e1`, pushed to `origin/main`.
+
+- [x] 2026-08-22 — **The P-6's CHOP is a 2–64 range, not a list of powers of two**, which
+      Antoine established: `P6_CHOP_VALUES` (1, 2, 4, 8, 16, 32) is replaced by `P6_MIN_CHOP`
+      = 2 and `P6_MAX_CHOP` = 64. The premise it encoded was wrong, so three things built on
+      it go with it. **The kit's rounding**: a kit is now exactly as many sections as it has
+      samples — 3 samples give `CHOP = 3`, not 4 sections with one silent — so the silent
+      filler row (`silentSections`, `silentRow`, `.kit__item--silent`) is gone rather than
+      left unreachable, and the ceiling moves from 32 to 64 samples. **The floor**: a kit
+      below 2 samples has no `CHOP` that describes it, so `sectionCount` returns `null` under
+      `MIN_KIT_SOURCES` as it already did over the ceiling, with its own line in the dialog
+      ("add one more", a hint rather than an error — it is the normal state while adding
+      files). One source used to build a `kit1_` pad with `CHOP = 1`, which is a plain sample
+      with extra steps. **The Memory-panel chop warning**: `chopWarnings` announced that a
+      count like 3 gets no `PRM`. Every count the app can now produce is a legal `CHOP` —
+      transient chop returns 2–16, a kit 2–64, `readChop` validates what a preset carries —
+      so the warning was unreachable and is deleted, along with `isChopValue`; the range test
+      it did and `isChopped`'s "is this pad chopped" collapse into one `isChopped`, since with
+      a range they ask the same question. The gain is not only the odd kit: **an onset chop
+      that finds 3 or 5 transients now ships a `PRM`** instead of a warning.
+      **The Chop menu** follows, at Antoine's request in the same breath: it offered 2 / 4 /
+      8 / 16, and now lists every count from 2 to 64, built from the two constants rather
+      than from a list of its own — `CHOP_SLICE_COUNTS` is gone and `DEFAULT_CHOP_SLICES` = 8
+      keeps the default it had. 63 options in a native `select` is a scroll, not a problem,
+      and nothing in `chop.js` needed touching: `equalBoundaries` divides by any count, and
+      transient placement was already free to return fewer.
+      Verified headless (section count `null` at 0/1/65, exact at 2/3/5/33/64; `readChop`
+      rejecting 1 and 65, accepting 2/3/32/64) and in the browser, twice-reloaded past the
+      service worker: 3 samples read `3 sections … set CHOP to 3`, 78 KB where the rounding
+      made 4 sections and 104 KB, and the dashed filler row is gone; a single sample disables
+      **Build kit** with the "at least 2" hint and `—` in every figure; 5 samples build
+      `kit5_kick.wav` on PAD 1 with 4 markers on the fifths and no Memory-panel warning;
+      `padSettings` for it writes `CHOP\t= 5` in its 62 fields and `readChop` reads 5 and 64
+      back; 64 samples of 50 ms build at 276 KB with `CHOP` 64 and a 92 ms ceiling at
+      44.1 kHz, a 65th says "remove 1" and removing it restores the kit. The Chop menu lists
+      63 counts, 2 to 64 with no gap, default 8; PAD 1 chopped into 5 becomes
+      `chop_5slices_44100Hz_mono_a656d563.wav` with its 4 markers on the fifths, into 64
+      `chop_64slices_…` with 63, neither raising a warning, and `padSettings` writes
+      `CHOP\t= 64` read back as 64. Transient placement asked for 64 on a 7-hit sample
+      returns 7 — a count that now ships a `PRM` instead of a warning. Console clean.
+      Writing such a kit to a real key and chopping it on the device still needs the hardware.
 
 ## Decisions
 
@@ -548,9 +589,11 @@
 - Chopping resets the trim: chop rebuilds the pad source from the rendered — therefore
   trimmed — audio, so the window would otherwise cut a second time into a sample that
   already carries it.
-- A kit's section count is rounded up to a `P6_CHOP_VALUES` entry rather than left at the
-  number of samples: the device chops into 1, 2, 4, 8, 16 or 32, so a 3-section file has no
-  setting that lands on its boundaries. The spare sections are silence.
+- A kit's section count is the number of samples, with no filler: the device's CHOP covers
+  every count from 2 to 64, so every kit under 65 samples has a setting that lands on its
+  boundaries. Below 2 it does not, which is why the dialog asks for a second sample rather
+  than building a one-section pad. (This replaces a rounding up to 1, 2, 4, 8, 16 or 32 —
+  the list turned out to be the factory pack's habits, not the device's range.)
 - The kit refuses to build past the 512 KiB pad instead of letting the device truncate it,
   unlike a plain oversize sample which is only warned about: a cut kit loses whole sections
   and every boundary after the cut describes the wrong sample. The message gives the section
@@ -588,10 +631,6 @@
   matching base names in all 48 folders, which is consistent with either rule.
 - `LOOP_SIZE` is written equal to `SIZE`, as every untouched factory pad has it, and as all
   nine chopped factory pads have it.
-- A chop count the device cannot express (transient placement can return 3) produces no
-  `PRM` and a warning in the Memory panel, rather than a `PRM` claiming a grid the device
-  would not use. Rounding such a chop up to a legal count, the way the kit builder does,
-  would change what **Chop** produces and was not asked for.
 - `SIZE` need not divide by `CHOP`: factory pad A-5 is `CHOP = 32` over 255036 frames, and
   H-1 is `CHOP = 16` over 124518. The device handles the remainder itself, so our even chop
   and its floor division are well within what the format tolerates.
@@ -599,9 +638,10 @@
   alone. One pad folder holds one sample, so the folder would be enough — but a `PRM` left
   beside a different sample is exactly the stale-file case the writer already guards against,
   and a wrong `CHOP` is worse than none.
-- `readChop` refuses `CHOP = 1` and any count outside `P6_CHOP_VALUES`, which is the same pair
-  of conditions the writer checks before emitting a `PRM` at all. The round trip is therefore
-  symmetric by construction: we read back exactly what we would write.
+- `readChop` refuses any count outside 2–64, which is the same condition the writer checks
+  before emitting a `PRM` at all. The round trip is therefore symmetric by construction: we
+  read back exactly what we would write. `CHOP = 1` is the device's "not chopped", so it reads
+  as no chop rather than as a one-slice grid.
 - The rest of the `PRM` is still ignored on load. `LEVEL`, the envelopes and the filter have no
   representation in the app, and inventing pad state the interface cannot show or edit would
   be worse than dropping it. A preset stays an `IMPORT`-tree snapshot, not a project format.
@@ -634,7 +674,8 @@ which is the real thing: 8 banks × 6 pads, a `WAV` and a `PRM` per pad, plus 16
 fields per pad:
 
 - position and playback: `PHRASE` (0–47, the flat pad index: A-1 = 0, H-6 = 47), `GATE`,
-  `LOOP`, `REVERSE`, `START_POS`, `MONO_POLY`, `MUTE_GROUP`, `CHOP` (1, 2, 4, 8, 16, 32).
+  `LOOP`, `REVERSE`, `START_POS`, `MONO_POLY`, `MUTE_GROUP`, `CHOP` (1, then any count from
+  2 to 64).
 - length: `SIZE` and `LOOP_SIZE`, **in frames**, matching the WAV data chunk divided by its
   block align exactly. The largest value in the factory pack is 262144 = 512 KiB of 16-bit
   mono, which independently confirms `MAX_PAD_BYTES`.
@@ -660,7 +701,8 @@ Measured across the 48 factory pads, which is what the writer is built on:
 - `SIZE` equals the WAV's frame count for 46 of the 48 pads. The two exceptions (D-5, E-5)
   hold *less* than the file, so `SIZE` describes the portion in use rather than the file
   length — we always write the whole file.
-- `CHOP` takes 6 distinct values across the pack: 1, 2, 4, 8, 16, 32, confirming the list.
+- `CHOP` takes 6 distinct values across the pack: 1, 2, 4, 8, 16, 32 — the factory pack's
+  habits, not the device's range, which Antoine gives as every count from 2 to 64.
 - File length is 822–834 bytes, the variation being digit counts, not fields.
 
 `PRM` is just Roland's parameter container here: the patterns use the same extension

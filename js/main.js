@@ -1,8 +1,9 @@
 import {
   BANK_IDS,
-  CHOP_SLICE_COUNTS,
+  DEFAULT_CHOP_SLICES,
   IMPORT_FOLDER_NAME,
-  P6_CHOP_VALUES,
+  P6_MAX_CHOP,
+  P6_MIN_CHOP,
   PADS_PER_BANK,
   PAD_SETTINGS_EXTENSION,
 } from './constants.js';
@@ -14,7 +15,7 @@ import { peakOf } from './audio/peaks.js';
 import { offsetWithinTrim, padMetrics, renderPad, trimWindow } from './audio/process.js';
 import { play, playingPadIndex, progress, stop } from './audio/player.js';
 import { encodeWav } from './audio/wav.js';
-import { isChopValue, isChopped, padSettings } from './fs/padSettings.js';
+import { isChopped, padSettings } from './fs/padSettings.js';
 import { buildPreset, presetFileName, readPreset } from './fs/preset.js';
 import * as store from './state.js';
 import * as usb from './fs/usb.js';
@@ -111,15 +112,8 @@ function truncationWarnings(bank) {
   });
 }
 
-function chopWarnings(bank) {
-  return bank.pads.flatMap((pad, padIndex) => {
-    if (!store.isPadLoaded(pad) || !isChopped(pad.sliceCount) || isChopValue(pad.sliceCount)) return [];
-    return [`PAD ${padIndex + 1} — ${pad.sliceCount} sections, but the P-6 chops into ${P6_CHOP_VALUES.join(', ')}, so no ${PAD_SETTINGS_EXTENSION} is written`];
-  });
-}
-
 function renderWarnings(bank) {
-  warningList.replaceChildren(...[...truncationWarnings(bank), ...chopWarnings(bank)].map((text) => {
+  warningList.replaceChildren(...truncationWarnings(bank).map((text) => {
     const item = document.createElement('li');
     item.textContent = text;
     return item;
@@ -336,7 +330,7 @@ function hasLoadedPad() {
 }
 
 function settingsFor(pad, bankId, padIndex, frames) {
-  if (!isChopped(pad.sliceCount) || !isChopValue(pad.sliceCount)) return null;
+  if (!isChopped(pad.sliceCount)) return null;
   return {
     fileName: usb.settingsFileName(pad.name),
     blob: padSettings({ bankId, padIndex, frames, sliceCount: pad.sliceCount }),
@@ -478,8 +472,9 @@ function bindTrimControl() {
 }
 
 function buildSelectors() {
-  chopCount.replaceChildren(...CHOP_SLICE_COUNTS.map((count) => new Option(String(count), String(count))));
-  chopCount.value = String(CHOP_SLICE_COUNTS[2]);
+  const counts = Array.from({ length: P6_MAX_CHOP - P6_MIN_CHOP + 1 }, (unused, index) => P6_MIN_CHOP + index);
+  chopCount.replaceChildren(...counts.map((count) => new Option(String(count), String(count))));
+  chopCount.value = String(DEFAULT_CHOP_SLICES);
 }
 
 async function restoreDestination() {

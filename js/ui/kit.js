@@ -6,7 +6,13 @@ import {
   SAMPLE_RATES,
 } from '../constants.js';
 import { formatBytes, formatSeconds } from '../format.js';
-import { MAX_KIT_SOURCES, combineIntoKit, kitMetrics, maxSectionSeconds } from '../audio/combine.js';
+import {
+  MAX_KIT_SOURCES,
+  MIN_KIT_SOURCES,
+  combineIntoKit,
+  kitMetrics,
+  maxSectionSeconds,
+} from '../audio/combine.js';
 import { decodeWavFile } from '../audio/decode.js';
 import { drawWaveform, waveColor } from './waveform.js';
 
@@ -98,17 +104,9 @@ export function createKitDialog({ onBuilt }) {
     return element;
   }
 
-  function silentRow(count) {
-    const element = document.createElement('li');
-    element.className = 'kit__item kit__item--silent';
-    element.textContent = `${count} silent ${count === 1 ? 'section' : 'sections'} to reach the chop count`;
-    return element;
-  }
-
-  function renderSources(metrics) {
+  function renderSources() {
     const rows = sources.map(buildRow);
-    const filler = metrics.silentSections > 0 ? [silentRow(metrics.silentSections)] : [];
-    list.replaceChildren(...rows, ...filler);
+    list.replaceChildren(...rows);
     rows.forEach((row, index) => {
       drawWaveform(row.querySelector('[data-wave]'), {
         peaks: sources[index].peaks,
@@ -143,11 +141,15 @@ export function createKitDialog({ onBuilt }) {
     sizeNode.textContent = formatBytes(metrics.bytes);
     sizeNode.classList.toggle('figure__value--over', metrics.overflows);
 
-    buildButton.disabled = isBusy || sources.length === 0 || metrics.sections === null || metrics.overflows;
+    buildButton.disabled = isBusy || metrics.sections === null || metrics.overflows;
     if (isBusy) return;
 
     if (sources.length === 0) {
       setMessage('Add the samples that will make up the kit.', 'hint');
+      return;
+    }
+    if (sources.length < MIN_KIT_SOURCES) {
+      setMessage(`A kit combines at least ${MIN_KIT_SOURCES} samples — add one more.`, 'hint');
       return;
     }
     if (metrics.sections === null) {
@@ -163,7 +165,7 @@ export function createKitDialog({ onBuilt }) {
 
   function renderAll() {
     const metrics = kitMetrics(sources, currentOptions());
-    renderSources(metrics);
+    renderSources();
     renderFigures(metrics);
   }
 
